@@ -11,3 +11,7 @@ Long, multi-function code is where small models break down (interface inconsiste
 3. **Eval** — multi-function module generation → compile rate + test pass rate, before vs after
 
 ## Structure
+data/ # dataset construction train/ # SFT training eval/ # benchmark & metrics
+
+## Status
+🚧 In progress — building the eval benchmark first.
