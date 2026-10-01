@@ -1,0 +1,22 @@
+{
+  "id": "p011",
+  "title": "In-memory database",
+  "domain": "system-utility",
+  "difficulty": "hard",
+  "n_functions": 10,
+  "requirement": "实现一个内存数据库。支持：建表（指定列名）、插入行（dict）、查询（可按列值等值过滤、可排序）、更新、删除、计数、两表内连接、以及聚合（sum/avg/min/max）。表不存在时相关操作抛 ValueError。",
+  "interface": [
+    {"type": "class", "name": "Database", "signature": "", "contract": "内存数据库。", "methods": [
+      {"name": "create_table", "signature": "self, name, columns", "contract": "建一张空表，columns 是列名列表。"},
+      {"name": "tables", "signature": "self", "contract": "返回所有表名的升序列表。"},
+      {"name": "columns", "signature": "self, table", "contract": "返回某表的列名列表。"},
+      {"name": "insert", "signature": "self, table, row", "contract": "插入一行（dict）；缺列抛 ValueError。"},
+      {"name": "select", "signature": "self, table, where=None, order_by=None, reverse=False", "contract": "返回匹配 where（dict，等值）的行列表；可按键排序。"},
+      {"name": "update", "signature": "self, table, where, values", "contract": "更新所有匹配行，返回更新行数。"},
+      {"name": "delete", "signature": "self, table, where", "contract": "删除所有匹配行，返回删除行数。"},
+      {"name": "count", "signature": "self, table, where=None", "contract": "返回匹配行数（where 为 None 时是总行数）。"},
+      {"name": "join", "signature": "self, t1, t2, key", "contract": "两表按公共列 key 内连接，返回合并后的行列表。"},
+      {"name": "aggregate", "signature": "self, table, column, func", "contract": "对 column 列做 sum/avg/min/max，返回 float；空表返回 0.0。"}
+    ]}
+  ]
+}

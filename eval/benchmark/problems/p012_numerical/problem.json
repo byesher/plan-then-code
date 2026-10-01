@@ -1,0 +1,17 @@
+{
+  "id": "p012",
+  "title": "Numerical methods",
+  "domain": "math-geometry",
+  "difficulty": "hard",
+  "n_functions": 7,
+  "requirement": "实现一组数值计算工具：多项式求值（系数升幂排列，用 Horner 法）、多项式求导、二分法求根、牛顿法求根、梯形/辛普森/左黎曼数值积分。f 是单参数函数。",
+  "interface": [
+    {"type": "function", "name": "evaluate_polynomial", "signature": "coeffs, x", "contract": "coeffs 为升幂系数 [a0,a1,...]，返回 a0+a1*x+a2*x^2+...。"},
+    {"type": "function", "name": "derivative", "signature": "coeffs", "contract": "返回多项式导数的系数列表。"},
+    {"type": "function", "name": "bisection", "signature": "f, a, b, tol=1e-6, max_iter=100", "contract": "二分法求 f 在 [a,b] 上的根；f(a)、f(b) 异号，否则抛 ValueError。"},
+    {"type": "function", "name": "newton", "signature": "f, df, x0, tol=1e-6, max_iter=100", "contract": "牛顿法求根；df 为导数，导数为零抛 ValueError。"},
+    {"type": "function", "name": "trapezoidal", "signature": "f, a, b, n", "contract": "梯形法数值积分 ∫_a^b f(x)dx，n 个区间。"},
+    {"type": "function", "name": "simpson", "signature": "f, a, b, n", "contract": "辛普森法数值积分；n 自动取偶数。"},
+    {"type": "function", "name": "riemann_sum", "signature": "f, a, b, n", "contract": "左黎曼和数值积分，n 个区间。"}
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "id": "p009",
+  "title": "Undirected weighted graph algorithms",
+  "domain": "data-structure",
+  "difficulty": "hard",
+  "n_functions": 11,
+  "requirement": "实现一个无向带权图及常用算法。需要支持：加顶点、加边、判断顶点/边是否存在、返回邻居、BFS/DFS 遍历（邻居按顶点编号升序访问）、Dijkstra 最短路、连通分量、环检测、最小生成树权重（Kruskal）。顶点用整数编号表示。",
+  "interface": [
+    {"type": "class", "name": "Graph", "signature": "", "contract": "无向带权图，顶点用整数编号。", "methods": [
+      {"name": "add_vertex", "signature": "self, v", "contract": "添加顶点 v（若不存在）。"},
+      {"name": "add_edge", "signature": "self, u, v, weight=1", "contract": "添加无向边 (u,v)；顶点不存在则自动创建。"},
+      {"name": "has_vertex", "signature": "self, v", "contract": "顶点 v 是否存在，返回 bool。"},
+      {"name": "has_edge", "signature": "self, u, v", "contract": "边 (u,v) 是否存在，返回 bool。"},
+      {"name": "neighbors", "signature": "self, v", "contract": "返回 v 的邻居顶点列表（升序）；v 不存在返回 []。"},
+      {"name": "bfs", "signature": "self, start", "contract": "从 start 开始 BFS，邻居按升序访问，返回访问顺序列表；start 不存在返回 []。"},
+      {"name": "dfs", "signature": "self, start", "contract": "从 start 开始 DFS，邻居按升序访问，返回访问顺序列表；start 不存在返回 []。"},
+      {"name": "dijkstra", "signature": "self, start, end", "contract": "返回 (最短距离, 路径列表)；不可达返回 (float('inf'), [])。"},
+      {"name": "connected_components", "signature": "self", "contract": "返回所有连通分量（每个分量内部升序，分量之间按最小顶点排序）。"},
+      {"name": "has_cycle", "signature": "self", "contract": "无向图是否存在环，返回 bool。"},
+      {"name": "mst_weight", "signature": "self", "contract": "返回最小生成树总权重（Kruskal）；空图返回 0。"}
+    ]}
+  ]
+}
