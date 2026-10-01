@@ -97,7 +97,7 @@ python check_problem.py ../benchmark/problems/<题目目录>
 1. 租一台 **4090（24G）**，选 **PyTorch 2.x + CUDA** 镜像。
 2. 装依赖：
    ```bash
-   pip install transformers torch accelerate openai
+   pip install transformers torch accelerate openai pytest
    ```
 3. 下载模型（国内建议用 ModelScope 镜像，快）：
    ```bash

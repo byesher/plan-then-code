@@ -79,10 +79,17 @@ def _scratch_dir() -> pathlib.Path:
     return d
 
 
-def evaluate_one(problem: dict, generator, timeout: int) -> dict:
+def evaluate_one(problem: dict, generator, timeout: int, solutions_dir: pathlib.Path | None = None) -> dict:
     prompt = render_prompt(problem)
     raw = generator.generate(prompt, problem["dir_name"])
     code = extract_code(raw)
+
+    if solutions_dir is not None:
+        sdir = solutions_dir / problem["dir_name"]
+        sdir.mkdir(parents=True, exist_ok=True)
+        (sdir / "raw.txt").write_text(raw, encoding="utf-8")
+        (sdir / "solution.py").write_text(code, encoding="utf-8")
+
     result = {
         "id": problem["id"],
         "title": problem["title"],
@@ -141,6 +148,17 @@ def build_generator(args):
     raise ValueError(f"unknown generator: {args.generator}")
 
 
+def check_pytest_available() -> bool:
+    try:
+        r = subprocess.run(
+            [sys.executable, "-B", "-c", "import pytest"],
+            capture_output=True, text=True, timeout=60,
+        )
+    except subprocess.TimeoutExpired:
+        return False
+    return r.returncode == 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--problems", required=True)
@@ -160,10 +178,19 @@ def main() -> int:
         print("no problems found", file=sys.stderr)
         return 1
 
+    if not check_pytest_available():
+        print("ERROR: pytest is not installed in this Python environment.", file=sys.stderr)
+        print("Install it with: pip install pytest", file=sys.stderr)
+        return 1
+
+    out_dir = pathlib.Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    solutions_dir = out_dir / "solutions"
+
     gen = build_generator(args)
     results = []
     for p in problems:
-        r = evaluate_one(p, gen, args.timeout)
+        r = evaluate_one(p, gen, args.timeout, solutions_dir)
         results.append(r)
         status = "PASS" if r["test_pass"] else ("COMPILE" if r["compile_ok"] else "FAIL")
         print(f"[{r['id']}] {status}  {r['title']}  ({r['n_tests']} tests)")
@@ -172,8 +199,6 @@ def main() -> int:
     print("\n=== aggregate ===")
     print(json.dumps(agg, indent=2, ensure_ascii=False))
 
-    out_dir = pathlib.Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
     report = {"aggregate": agg, "results": results}
     out_path = out_dir / f"report_{args.generator}.json"
     out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
