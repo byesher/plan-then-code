@@ -1,0 +1,16 @@
+{
+  "id": "p002",
+  "title": "INI config parser",
+  "domain": "string-parsing",
+  "difficulty": "medium",
+  "n_functions": 6,
+  "requirement": "实现一个 INI 配置文件的解析与序列化工具。INI 格式：用 [section] 表示小节；key = value 表示键值；以 # 或 ; 开头的行为注释；小节之前出现的键属于全局（global）小节（用空字符串 \"\" 表示）。需要实现：解析、序列化、类型化读取（字符串/整数/布尔）、列出小节。",
+  "interface": [
+    {"type": "function", "name": "parse_ini", "signature": "text", "contract": "把 INI 文本解析成嵌套 dict：{section: {key: value}}，所有 value 为字符串。忽略注释和空行。"},
+    {"type": "function", "name": "write_ini", "signature": "config", "contract": "把嵌套 dict 序列化回 INI 文本。全局小节（\"\"）的键排在最前，其余小节按键名排序。"},
+    {"type": "function", "name": "get_value", "signature": "config, section, key, default=None", "contract": "读取字符串值；小节或键不存在时返回 default。"},
+    {"type": "function", "name": "get_int", "signature": "config, section, key, default=0", "contract": "读取并转 int；不存在或无法转换时返回 default。"},
+    {"type": "function", "name": "get_bool", "signature": "config, section, key, default=False", "contract": "读取并转 bool，支持 true/false、yes/no、on/off、1/0；无法识别返回 default。"},
+    {"type": "function", "name": "sections", "signature": "config", "contract": "返回所有小节名（不含全局 \"\"）的升序列表。"}
+  ]
+}
