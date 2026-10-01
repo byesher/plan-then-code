@@ -56,7 +56,7 @@ STDLIB_MODULES = set(sys.stdlib_module_names)
 
 def analyze_solution(code: str, problem: dict) -> dict:
     """Parse the model's code with AST; report missing interface names and non-stdlib imports."""
-    info = {"missing_names": [], "non_stdlib_imports": []}
+    info = {"missing_names": [], "non_stdlib_imports": [], "nested_in_class": []}
     try:
         tree = ast.parse(code)
     except SyntaxError:
@@ -88,6 +88,8 @@ def analyze_solution(code: str, problem: dict) -> dict:
             if name not in defined:
                 missing.append(name)
     info["missing_names"] = missing
+    all_nested = {m for methods in class_methods.values() for m in methods}
+    info["nested_in_class"] = [n for n in missing if n in all_nested]
 
     non_stdlib = set()
     for node in ast.walk(tree):
@@ -158,6 +160,7 @@ def evaluate_one(problem: dict, generator, timeout: int, solutions_dir: pathlib.
         "test_pass": False,
         "interface_ok": len(analysis["missing_names"]) == 0,
         "missing_names": analysis["missing_names"],
+        "nested_in_class": analysis["nested_in_class"],
         "non_stdlib_imports": analysis["non_stdlib_imports"],
         "compile_err": "",
         "test_output": "",

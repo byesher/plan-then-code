@@ -31,7 +31,8 @@ def render_prompt(problem: dict[str, Any]) -> str:
         f"# Required interface (implement exactly; keep names and signatures unchanged)\n{interface}\n\n"
         "# Rules\n"
         "- Output ONLY the Python code, with no explanation and no markdown fences.\n"
-        "- You may add private helper functions/classes, but must expose the interface above exactly.\n"
+        "- Define every function/class in the interface at the TOP LEVEL of the file, with the exact names and signatures given.\n"
+        "- Do NOT wrap the required functions/classes inside another class.\n"
+        "- You may add private helper functions/classes at the top level too.\n"
         "- Use only the Python standard library.\n"
-        "- The code must be importable as a module named `solution`.\n"
     )
