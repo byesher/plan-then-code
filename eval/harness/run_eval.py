@@ -4,7 +4,7 @@ Usage (run from this harness directory):
   # self-check: reference solutions must score 100%
   python run_eval.py --problems ../benchmark/problems --generator reference
   # pre-generated solutions (generate on GPU, evaluate here)
-  python run_eval.py --problems ../benchmark/problems --generator file --solutions-dir ../results/solutions
+  python run_eval.py --problems ../benchmark/problems --generator file --solutions-dir ../results/runs/<run_name>
   # local HF model (on AutoDL)
   python run_eval.py --problems ../benchmark/problems --generator local --model Qwen/Qwen2.5-7B-Instruct
   # OpenAI-compatible API (DashScope / vLLM)
@@ -13,6 +13,8 @@ Usage (run from this harness directory):
 from __future__ import annotations
 
 import argparse
+import ast
+import datetime
 import json
 import os
 import pathlib
@@ -47,6 +49,60 @@ def load_problems(root: pathlib.Path) -> list[dict]:
 
 def count_tests(tests_file: pathlib.Path) -> int:
     return len(re.findall(r"^\s*def test_", tests_file.read_text(encoding="utf-8"), re.MULTILINE))
+
+
+STDLIB_MODULES = set(sys.stdlib_module_names)
+
+
+def analyze_solution(code: str, problem: dict) -> dict:
+    """Parse the model's code with AST; report missing interface names and non-stdlib imports."""
+    info = {"missing_names": [], "non_stdlib_imports": []}
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return info  # compile check will report this case
+
+    defined = set()
+    class_methods: dict[str, set[str]] = {}
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            defined.add(node.name)
+        elif isinstance(node, ast.ClassDef):
+            defined.add(node.name)
+            class_methods[node.name] = {
+                sub.name for sub in node.body
+                if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef))
+            }
+
+    missing: list[str] = []
+    for unit in problem.get("interface", []):
+        name = unit["name"]
+        if unit.get("type") == "class":
+            if name not in defined:
+                missing.append(name)
+            else:
+                for m in unit.get("methods", []):
+                    if m["name"] not in class_methods.get(name, set()):
+                        missing.append(f"{name}.{m['name']}")
+        else:
+            if name not in defined:
+                missing.append(name)
+    info["missing_names"] = missing
+
+    non_stdlib = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                top = alias.name.split(".")[0]
+                if top not in STDLIB_MODULES:
+                    non_stdlib.add(top)
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                top = node.module.split(".")[0]
+                if top not in STDLIB_MODULES:
+                    non_stdlib.add(top)
+    info["non_stdlib_imports"] = sorted(non_stdlib)
+    return info
 
 
 def check_compile(td: pathlib.Path, timeout: int) -> tuple[bool, str]:
@@ -90,6 +146,7 @@ def evaluate_one(problem: dict, generator, timeout: int, solutions_dir: pathlib.
         (sdir / "raw.txt").write_text(raw, encoding="utf-8")
         (sdir / "solution.py").write_text(code, encoding="utf-8")
 
+    analysis = analyze_solution(code, problem)
     result = {
         "id": problem["id"],
         "title": problem["title"],
@@ -99,6 +156,9 @@ def evaluate_one(problem: dict, generator, timeout: int, solutions_dir: pathlib.
         "n_tests": 0,
         "compile_ok": False,
         "test_pass": False,
+        "interface_ok": len(analysis["missing_names"]) == 0,
+        "missing_names": analysis["missing_names"],
+        "non_stdlib_imports": analysis["non_stdlib_imports"],
         "compile_err": "",
         "test_output": "",
     }
@@ -125,6 +185,8 @@ def aggregate(results: list[dict]) -> dict:
     total = len(results)
     compiled = sum(1 for r in results if r["compile_ok"])
     passed = sum(1 for r in results if r["test_pass"])
+    interface_ok = sum(1 for r in results if r.get("interface_ok"))
+    non_stdlib = sum(1 for r in results if r.get("non_stdlib_imports"))
     return {
         "total": total,
         "compiled": compiled,
@@ -132,7 +194,24 @@ def aggregate(results: list[dict]) -> dict:
         "compile_rate": (compiled / total) if total else 0.0,
         "test_pass_rate": (passed / total) if total else 0.0,
         "test_pass_rate_among_compiled": (passed / compiled) if compiled else 0.0,
+        "interface_ok": interface_ok,
+        "interface_ok_rate": (interface_ok / total) if total else 0.0,
+        "non_stdlib_count": non_stdlib,
+        "non_stdlib_rate": (non_stdlib / total) if total else 0.0,
+        "test_pass_rate_among_interface_ok": (passed / interface_ok) if interface_ok else 0.0,
     }
+
+
+def _status_of(r: dict) -> str:
+    if r.get("test_pass"):
+        return "PASS"
+    if not r.get("compile_ok"):
+        return "COMPILE-FAIL"
+    if r.get("missing_names"):
+        return "IFACE-MISS"
+    if r.get("non_stdlib_imports"):
+        return "NON-STDLIB"
+    return "LOGIC-FAIL"
 
 
 def build_generator(args):
@@ -171,6 +250,7 @@ def main() -> int:
     ap.add_argument("--max-tokens", type=int, default=4096)
     ap.add_argument("--timeout", type=int, default=120)
     ap.add_argument("--out-dir", default="../results")
+    ap.add_argument("--run-name", default=None, help="run tag; defaults to <generator>_<timestamp>")
     args = ap.parse_args()
 
     problems = load_problems(pathlib.Path(args.problems))
@@ -185,22 +265,28 @@ def main() -> int:
 
     out_dir = pathlib.Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    solutions_dir = out_dir / "solutions"
+    run_name = args.run_name or f"{args.generator}_{datetime.datetime.now():%Y%m%d_%H%M%S}"
+    solutions_dir = out_dir / "runs" / run_name
 
     gen = build_generator(args)
     results = []
     for p in problems:
         r = evaluate_one(p, gen, args.timeout, solutions_dir)
         results.append(r)
-        status = "PASS" if r["test_pass"] else ("COMPILE" if r["compile_ok"] else "FAIL")
-        print(f"[{r['id']}] {status}  {r['title']}  ({r['n_tests']} tests)")
+        status = _status_of(r)
+        extra = ""
+        if r["missing_names"]:
+            extra += f"  missing={r['missing_names']}"
+        if r["non_stdlib_imports"]:
+            extra += f"  non_stdlib={r['non_stdlib_imports']}"
+        print(f"[{r['id']}] {status}  {r['title']}  ({r['n_tests']} tests){extra}")
 
     agg = aggregate(results)
     print("\n=== aggregate ===")
     print(json.dumps(agg, indent=2, ensure_ascii=False))
 
-    report = {"aggregate": agg, "results": results}
-    out_path = out_dir / f"report_{args.generator}.json"
+    report = {"aggregate": agg, "results": results, "run_name": run_name}
+    out_path = out_dir / f"report_{run_name}.json"
     out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\nreport saved to {out_path}")
     return 0

@@ -5,3 +5,9 @@ __pycache__/
 
 # eval harness scratch
 eval/.scratch/
+
+# downloaded model weights (large, local only)
+Qwen2.5-7B-Instruct/
+
+# generated eval outputs (re-runnable)
+eval/results/runs/
