@@ -1,0 +1,14 @@
+{
+  "id": "p001",
+  "title": "Interval utilities",
+  "domain": "data-structure",
+  "difficulty": "easy",
+  "n_functions": 4,
+  "requirement": "实现一组处理整数区间的工具函数。区间用 (start, end) 元组表示，遵循半开区间 [start, end)，即包含 start、不包含 end。需要实现：判断两个区间是否重叠、求两个区间的交集、合并重叠或相邻的区间、计算合并后所有区间的总覆盖长度。",
+  "interface": [
+    {"type": "function", "name": "overlaps", "signature": "a, b", "contract": "a、b 是 (start, end) 元组。判断它们是否有正长度的公共部分，返回 bool。"},
+    {"type": "function", "name": "intersection", "signature": "a, b", "contract": "返回 a、b 的交集 (start, end) 元组；若不相交（包括仅端点相接）返回 None。"},
+    {"type": "function", "name": "merge", "signature": "intervals", "contract": "intervals 是 (start, end) 元组列表。合并所有重叠或相邻的区间，返回按 start 升序排列、互不重叠的区间列表。"},
+    {"type": "function", "name": "coverage_length", "signature": "intervals", "contract": "返回所有区间合并后的总覆盖长度（整数）。"}
+  ]
+}

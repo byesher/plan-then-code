@@ -1,0 +1,19 @@
+{
+  "id": "p003",
+  "title": "Versioned KV store with CAS",
+  "domain": "system-utility",
+  "difficulty": "medium",
+  "n_functions": 7,
+  "requirement": "实现一个带版本号、支持 CAS（compare-and-set）的键值存储。每次写入（put）都会把该键的版本号加 1（从 1 开始）；put_if_version 只在当前版本号与期望版本号一致时才写入。需要实现一个 KVStore 类，包含读写、版本查询、删除、CAS 写入、键列表、大小等方法。",
+  "interface": [
+    {"type": "class", "name": "KVStore", "signature": "", "contract": "一个带版本号、支持 CAS 的键值存储。", "methods": [
+      {"name": "put", "signature": "self, key, value", "contract": "写入/覆盖 key 的值，版本号 +1（从 1 开始）。返回新版本号（int）。"},
+      {"name": "get", "signature": "self, key", "contract": "返回 key 对应的值；不存在返回 None。"},
+      {"name": "get_version", "signature": "self, key", "contract": "返回 key 的当前版本号；不存在返回 0。"},
+      {"name": "delete", "signature": "self, key", "contract": "删除 key，返回是否真的删除了（bool）。"},
+      {"name": "put_if_version", "signature": "self, key, value, expected_version", "contract": "CAS：仅当 key 当前版本号 == expected_version 时写入并返回 True，否则不改动、返回 False。"},
+      {"name": "list_keys", "signature": "self", "contract": "返回所有 key 的升序列表。"},
+      {"name": "size", "signature": "self", "contract": "返回当前元素个数。"}
+    ]}
+  ]
+}

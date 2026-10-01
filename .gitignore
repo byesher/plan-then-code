@@ -1,0 +1,7 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# eval harness scratch
+eval/.scratch/

@@ -1,0 +1,17 @@
+{
+  "id": "p004",
+  "title": "2D geometry utilities",
+  "domain": "math-geometry",
+  "difficulty": "hard",
+  "n_functions": 7,
+  "requirement": "实现一组二维计算几何工具函数。点用 (x, y) 元组表示，坐标可为 int 或 float。需要实现：两点距离、两条线段交点、多边形面积（鞋带公式）、点是否在多边形内（射线法）、凸包（Andrew 单调链）、包围盒、多边形是否凸。",
+  "interface": [
+    {"type": "function", "name": "distance", "signature": "p1, p2", "contract": "返回 p1、p2 的欧氏距离（float）。"},
+    {"type": "function", "name": "line_intersection", "signature": "a, b, c, d", "contract": "线段 a-b 与线段 c-d 的交点 (x, y)；平行、共线或交点在线段范围外时返回 None。"},
+    {"type": "function", "name": "polygon_area", "signature": "points", "contract": "返回按顺序给定顶点的多边形面积（鞋带公式，取绝对值）。点数少于 3 返回 0.0。"},
+    {"type": "function", "name": "point_in_polygon", "signature": "point, polygon", "contract": "用射线法判断 point 是否在多边形内部（不含边界），返回 bool。"},
+    {"type": "function", "name": "convex_hull", "signature": "points", "contract": "返回 points 的凸包顶点列表（Andrew 单调链，不含共线边上的点）。点数为 0/1 时返回原列表。"},
+    {"type": "function", "name": "bounding_box", "signature": "points", "contract": "返回 (min_x, min_y, max_x, max_y)；空列表返回 None。"},
+    {"type": "function", "name": "is_convex", "signature": "points", "contract": "判断顶点按顺序给定的多边形是否凸（所有转向同号），返回 bool。点数少于 3 返回 False。"}
+  ]
+}
