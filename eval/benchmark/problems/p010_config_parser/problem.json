@@ -1,0 +1,17 @@
+{
+  "id": "p010",
+  "title": "Typed config parser with nesting",
+  "domain": "string-parsing",
+  "difficulty": "hard",
+  "n_functions": 7,
+  "requirement": "实现一个带类型、支持嵌套的配置解析器。格式：`key = value` 是键值对，`[a.b]` 是（可嵌套的）小节；`#` 开头为注释。值按类型自动解析：true/false -> 布尔，整数 -> int，含小数点 -> float，`[1, 2, 3]` -> 列表，其余 -> 字符串。再提供：序列化、点路径读写、展平/还原、深合并。",
+  "interface": [
+    {"type": "function", "name": "parse", "signature": "text", "contract": "解析配置文本，返回嵌套 dict（值已按类型解析）。"},
+    {"type": "function", "name": "dumps", "signature": "config", "contract": "把嵌套 dict 序列化回配置文本，能保证 parse(dumps(x)) == x。"},
+    {"type": "function", "name": "get_path", "signature": "config, path, default=None", "contract": "按点路径（如 a.b.c）读取值；路径不存在返回 default。"},
+    {"type": "function", "name": "set_path", "signature": "config, path, value", "contract": "按点路径写入值，自动创建中间层的 dict。"},
+    {"type": "function", "name": "flatten", "signature": "config", "contract": "把嵌套 dict 展平成 {点路径: 值}。"},
+    {"type": "function", "name": "unflatten", "signature": "flat", "contract": "把 {点路径: 值} 还原成嵌套 dict。"},
+    {"type": "function", "name": "merge", "signature": "base, override", "contract": "深合并两个 dict，override 优先，返回新 dict。"}
+  ]
+}

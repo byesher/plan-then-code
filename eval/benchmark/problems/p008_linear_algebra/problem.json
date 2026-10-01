@@ -1,0 +1,16 @@
+{
+  "id": "p008",
+  "title": "Linear algebra utilities",
+  "domain": "math-geometry",
+  "difficulty": "medium",
+  "n_functions": 6,
+  "requirement": "实现一组基础线性代数工具函数，用嵌套列表表示向量和矩阵（矩阵为 list[list[float]]）。需要实现：向量加法、点积、矩阵乘法、转置、单位矩阵、行列式（n×n，用余子式展开）。",
+  "interface": [
+    {"type": "function", "name": "vector_add", "signature": "a, b", "contract": "返回两个等长向量逐元素相加的结果。"},
+    {"type": "function", "name": "dot", "signature": "a, b", "contract": "返回两个等长向量的点积（标量）。"},
+    {"type": "function", "name": "matmul", "signature": "A, B", "contract": "矩阵乘法 A×B，返回结果矩阵。"},
+    {"type": "function", "name": "transpose", "signature": "A", "contract": "返回 A 的转置。"},
+    {"type": "function", "name": "identity", "signature": "n", "contract": "返回 n×n 单位矩阵。"},
+    {"type": "function", "name": "determinant", "signature": "A", "contract": "返回方阵 A 的行列式（余子式展开）。"}
+  ]
+}

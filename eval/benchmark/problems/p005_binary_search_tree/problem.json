@@ -1,0 +1,23 @@
+{
+  "id": "p005",
+  "title": "Binary Search Tree",
+  "domain": "data-structure",
+  "difficulty": "medium",
+  "n_functions": 11,
+  "requirement": "实现一个不含重复值的二叉搜索树（BST）。需要支持：插入、删除、查找、三种遍历（中序/前序/后序）、最小/最大值、后继（树中严格大于给定值的最小值）、树高、节点数。约定：空树的高度为 -1，单节点树的高度为 0。",
+  "interface": [
+    {"type": "class", "name": "BST", "signature": "", "contract": "不含重复值的二叉搜索树。", "methods": [
+      {"name": "insert", "signature": "self, value", "contract": "插入 value；若已存在则忽略（不改变结构）。"},
+      {"name": "delete", "signature": "self, value", "contract": "删除 value；存在返回 True，否则返回 False。"},
+      {"name": "search", "signature": "self, value", "contract": "判断 value 是否存在，返回 bool。"},
+      {"name": "inorder", "signature": "self", "contract": "中序遍历，返回升序的值列表。"},
+      {"name": "preorder", "signature": "self", "contract": "前序遍历的值列表。"},
+      {"name": "postorder", "signature": "self", "contract": "后序遍历的值列表。"},
+      {"name": "min", "signature": "self", "contract": "返回最小值；空树返回 None。"},
+      {"name": "max", "signature": "self", "contract": "返回最大值；空树返回 None。"},
+      {"name": "successor", "signature": "self, value", "contract": "返回树中严格大于 value 的最小值；不存在返回 None。"},
+      {"name": "height", "signature": "self", "contract": "返回树高（最长路径的边数）；空树 -1，单节点 0。"},
+      {"name": "size", "signature": "self", "contract": "返回节点个数。"}
+    ]}
+  ]
+}

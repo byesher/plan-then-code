@@ -1,0 +1,15 @@
+{
+  "id": "p006",
+  "title": "CSV parser and serializer",
+  "domain": "string-parsing",
+  "difficulty": "medium",
+  "n_functions": 5,
+  "requirement": "实现一个 CSV 解析与序列化工具。CSV 规则：字段用逗号分隔；字段可用双引号包裹；引号内的逗号、换行、双引号是字面内容；引号内的双引号用两个连续双引号（\"\"）转义。再提供：把带表头的行转成字典列表、把字典列表转回带表头的行、按表头名提取某一列。",
+  "interface": [
+    {"type": "function", "name": "parse_csv", "signature": "text", "contract": "把 CSV 文本解析成 list[list[str]]（每行一个字符串列表）。空文本返回 []。"},
+    {"type": "function", "name": "write_csv", "signature": "rows", "contract": "把 list[list[str]] 序列化回 CSV 文本；含逗号/双引号/换行的字段要加引号并转义。"},
+    {"type": "function", "name": "to_records", "signature": "rows", "contract": "以第一行为表头，把剩余行转成 list[dict]；字段不足时补空字符串。"},
+    {"type": "function", "name": "to_table", "signature": "records", "contract": "把 list[dict] 转回带表头的行列表；表头取自第一条记录的键顺序。"},
+    {"type": "function", "name": "column", "signature": "rows, name", "contract": "返回表头名为 name 的那一列（不含表头）；无此列返回 []。"}
+  ]
+}
