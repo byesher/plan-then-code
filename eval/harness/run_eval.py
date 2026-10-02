@@ -250,6 +250,8 @@ def aggregate(results: list[dict]) -> dict:
     passed = sum(1 for r in results if r["test_pass"])
     interface_ok = sum(1 for r in results if r.get("interface_ok"))
     non_stdlib = sum(1 for r in results if r.get("non_stdlib_imports"))
+    n_samples = results[0].get("n_samples", 1) if results else 1
+    total_passed_samples = sum(r.get("n_passed_samples", 1 if r["test_pass"] else 0) for r in results)
     return {
         "total": total,
         "compiled": compiled,
@@ -262,6 +264,8 @@ def aggregate(results: list[dict]) -> dict:
         "non_stdlib_count": non_stdlib,
         "non_stdlib_rate": (non_stdlib / total) if total else 0.0,
         "test_pass_rate_among_interface_ok": (passed / interface_ok) if interface_ok else 0.0,
+        "n_samples": n_samples,
+        "pass_at_1_avg": (total_passed_samples / (total * n_samples)) if total else 0.0,
     }
 
 
@@ -284,7 +288,8 @@ def build_generator(args):
         return FileGenerator(pathlib.Path(args.solutions_dir))
     if args.generator == "local":
         return LocalModelGenerator(args.model, max_new_tokens=args.max_new_tokens,
-                                   load_in_8bit=args.load_in_8bit, load_in_4bit=args.load_in_4bit)
+                                   load_in_8bit=args.load_in_8bit, load_in_4bit=args.load_in_4bit,
+                                   temperature=args.temperature)
     if args.generator == "openai":
         return OpenAICompatibleGenerator(args.base_url, args.model, args.api_key,
                                          max_tokens=args.max_tokens)
@@ -314,6 +319,8 @@ def main() -> int:
     ap.add_argument("--max-tokens", type=int, default=4096)
     ap.add_argument("--load-in-8bit", action="store_true", help="load model in 8-bit (bitsandbytes)")
     ap.add_argument("--load-in-4bit", action="store_true", help="load model in 4-bit (bitsandbytes)")
+    ap.add_argument("--temperature", type=float, default=0.0, help="sampling temperature (0 = greedy)")
+    ap.add_argument("--num-samples", type=int, default=1, help="samples per problem (pass@k)")
     ap.add_argument("--timeout", type=int, default=120)
     ap.add_argument("--out-dir", default="../results")
     ap.add_argument("--run-name", default=None, help="run tag; defaults to <generator>_<timestamp>")
@@ -337,10 +344,15 @@ def main() -> int:
     gen = build_generator(args)
     results = []
     for p in problems:
-        if p.get("mode") == "io":
-            r = evaluate_io(p, gen, args.timeout, solutions_dir)
-        else:
-            r = evaluate_one(p, gen, args.timeout, solutions_dir)
+        eval_fn = evaluate_io if p.get("mode") == "io" else evaluate_one
+        samples = []
+        for i in range(args.num_samples):
+            sd = solutions_dir if i == 0 else None
+            samples.append(eval_fn(p, gen, args.timeout, sd))
+        r = samples[0]
+        r["n_samples"] = args.num_samples
+        r["n_passed_samples"] = sum(1 for s in samples if s["test_pass"])
+        r["test_pass"] = any(s["test_pass"] for s in samples)
         results.append(r)
         status = _status_of(r)
         extra = ""
@@ -348,6 +360,8 @@ def main() -> int:
             extra += f"  missing={r['missing_names']}"
         if r.get("non_stdlib_imports"):
             extra += f"  non_stdlib={r['non_stdlib_imports']}"
+        if args.num_samples > 1:
+            extra += f"  pass@k={r['n_passed_samples']}/{args.num_samples}"
         print(f"[{r['id']}] {status}  {r['title']}  ({r['n_tests']} tests){extra}")
 
     agg = aggregate(results)
