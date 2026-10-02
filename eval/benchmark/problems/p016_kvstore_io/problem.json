@@ -1,0 +1,14 @@
+{
+  "id": "p016",
+  "title": "Versioned KV store (I/O)",
+  "domain": "system-utility",
+  "difficulty": "medium",
+  "mode": "io",
+  "requirement": "实现一个带版本号的键值存储，处理命令：put 写入（版本号 +1，从 1 开始）、get 读取、get_version 查版本、cas 条件写入（仅当当前版本号等于期望版本号才写）、delete 删除、size 查元素个数。",
+  "input_format": "每行一条命令：put key value / get key / get_version key / cas key value expected_version / delete key / size。",
+  "output_format": "对 get 输出值（不存在输出 -1）；get_version 输出版本号（不存在输出 0）；cas 输出 true/false；delete 输出 true/false；size 输出个数。每行一个。",
+  "tests": [
+    {"input": "put a 1\nput a 2\nget_version a\nget a\ncas a 10 2\nget a\ncas a 99 5\nsize\n", "output": "2\n2\ntrue\n10\nfalse\n1\n"},
+    {"input": "get x\nget_version x\ndelete x\n", "output": "-1\n0\nfalse\n"}
+  ]
+}

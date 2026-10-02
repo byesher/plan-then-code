@@ -1,0 +1,14 @@
+{
+  "id": "p015",
+  "title": "INI parser (I/O)",
+  "domain": "string-parsing",
+  "difficulty": "medium",
+  "mode": "io",
+  "requirement": "解析一个 INI 配置文件，把所有键值按 \"小节.键\" 的形式展平输出（小节之前的键不带前缀）。",
+  "input_format": "INI 文本（读到文件结束）。格式：以 [section] 表示小节、key = value 表示键值、以 # 或 ; 开头为注释。",
+  "output_format": "每个键值一行 \"小节.键 = 值\"（全局键为 \"键 = 值\"），按键的字典序输出。",
+  "tests": [
+    {"input": "; comment\nname = example\nport = 8080\n\n[database]\nhost = localhost\nport = 5432\n", "output": "database.host = localhost\ndatabase.port = 5432\nname = example\nport = 8080\n"},
+    {"input": "[a]\nx = 1\n", "output": "a.x = 1\n"}
+  ]
+}

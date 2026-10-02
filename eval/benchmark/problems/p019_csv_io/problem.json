@@ -1,0 +1,13 @@
+{
+  "id": "p019",
+  "title": "CSV parser (I/O)",
+  "domain": "string-parsing",
+  "difficulty": "medium",
+  "mode": "io",
+  "requirement": "解析一个 CSV 文本（字段可用双引号包裹，引号内可含逗号和转义的双引号），把每行的字段用 \" | \" 连接后输出。",
+  "input_format": "CSV 文本（读到文件结束）。",
+  "output_format": "每行输出该行的字段，字段间用 \" | \" 分隔。",
+  "tests": [
+    {"input": "name,age,city\n\"Alice, A.\",30,\"New York\"\n\"Bob \"\"B\"\"\",25,LA\n", "output": "name | age | city\nAlice, A. | 30 | New York\nBob \"B\" | 25 | LA\n"}
+  ]
+}

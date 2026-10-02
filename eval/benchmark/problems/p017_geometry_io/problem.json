@@ -1,0 +1,16 @@
+{
+  "id": "p017",
+  "title": "2D geometry (I/O)",
+  "domain": "math-geometry",
+  "difficulty": "hard",
+  "mode": "io",
+  "requirement": "处理若干几何计算：两点距离、多边形面积（鞋带公式）、点是否在多边形内。",
+  "input_format": "每行一条命令：dist x1 y1 x2 y2；area n x1 y1 ... xn yn；inside x y n x1 y1 ... xn yn。",
+  "output_format": "dist/area 输出浮点数；inside 输出 true/false。每行一个。",
+  "tests": [
+    {"input": "dist 0 0 3 4\n", "output": "5.0\n"},
+    {"input": "area 3 0 0 4 0 0 3\n", "output": "6.0\n"},
+    {"input": "inside 1 1 4 0 0 2 0 2 2 0 2\n", "output": "true\n"},
+    {"input": "inside 5 5 4 0 0 2 0 2 2 0 2\n", "output": "false\n"}
+  ]
+}
