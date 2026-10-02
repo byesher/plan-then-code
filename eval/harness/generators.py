@@ -59,7 +59,7 @@ class LocalModelGenerator:
 
         self._tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
 
-        kwargs = dict(device_map="auto", trust_remote_code=True)
+        kwargs = dict(trust_remote_code=True)
         if self.load_in_8bit or self.load_in_4bit:
             from transformers import BitsAndBytesConfig
             if self.load_in_4bit:
@@ -71,8 +71,11 @@ class LocalModelGenerator:
                 )
             else:
                 kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
+            # NOTE: no device_map for quantized models — bitsandbytes auto-places them on the
+            # GPU, and passing device_map="auto" triggers a .to() call that 8/4-bit models reject.
         else:
             kwargs["torch_dtype"] = "auto"
+            kwargs["device_map"] = "auto"
 
         self._model = AutoModelForCausalLM.from_pretrained(self.model_name, **kwargs)
         self._model.eval()
@@ -84,7 +87,8 @@ class LocalModelGenerator:
 
         messages = [{"role": "user", "content": prompt}]
         text = self._tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        inputs = self._tokenizer(text, return_tensors="pt").to(self._model.device)
+        device = next(self._model.parameters()).device
+        inputs = self._tokenizer(text, return_tensors="pt").to(device)
         with torch.no_grad():
             out = self._model.generate(**inputs, max_new_tokens=self.max_new_tokens, do_sample=False)
         new = out[0][inputs["input_ids"].shape[1]:]
