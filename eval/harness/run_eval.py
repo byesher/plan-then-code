@@ -185,6 +185,17 @@ def evaluate_one(problem: dict, generator, timeout: int, solutions_dir: pathlib.
     return result
 
 
+def _normalize_output(text: str) -> str:
+    """Normalize I/O output: strip per-line whitespace, lowercase standalone true/false.
+
+    Models often print Python bools (``True``/``False``) while the spec means the
+    lowercase strings ``true``/``false``; treat them as equal.
+    """
+    lines = [ln.strip() for ln in text.splitlines()]
+    lines = [ln.lower() if ln.lower() in ("true", "false") else ln for ln in lines]
+    return "\n".join(lines)
+
+
 def evaluate_io(problem: dict, generator, timeout: int, solutions_dir: pathlib.Path | None = None, sample_index: int | None = None) -> dict:
     prompt = render_io_prompt(problem)
     raw = generator.generate(prompt, problem["dir_name"])
@@ -235,7 +246,7 @@ def evaluate_io(problem: dict, generator, timeout: int, solutions_dir: pathlib.P
             if r.returncode != 0:
                 notes.append(f"[case] runtime error: {r.stderr.strip()[:300]}")
                 continue
-            if r.stdout == case["output"]:
+            if _normalize_output(r.stdout) == _normalize_output(case["output"]):
                 passed += 1
             else:
                 notes.append(f"[case] mismatch:\n  expected={case['output']!r}\n  actual  ={r.stdout!r}")
