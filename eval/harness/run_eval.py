@@ -137,7 +137,7 @@ def _scratch_dir() -> pathlib.Path:
     return d
 
 
-def evaluate_one(problem: dict, generator, timeout: int, solutions_dir: pathlib.Path | None = None) -> dict:
+def evaluate_one(problem: dict, generator, timeout: int, solutions_dir: pathlib.Path | None = None, sample_index: int | None = None) -> dict:
     prompt = render_prompt(problem)
     raw = generator.generate(prompt, problem["dir_name"])
     code = extract_code(raw)
@@ -145,8 +145,9 @@ def evaluate_one(problem: dict, generator, timeout: int, solutions_dir: pathlib.
     if solutions_dir is not None:
         sdir = solutions_dir / problem["dir_name"]
         sdir.mkdir(parents=True, exist_ok=True)
-        (sdir / "raw.txt").write_text(raw, encoding="utf-8")
-        (sdir / "solution.py").write_text(code, encoding="utf-8")
+        suffix = "" if (sample_index is None or sample_index == 0) else f"_{sample_index}"
+        (sdir / f"raw{suffix}.txt").write_text(raw, encoding="utf-8")
+        (sdir / f"solution{suffix}.py").write_text(code, encoding="utf-8")
 
     analysis = analyze_solution(code, problem)
     result = {
@@ -184,7 +185,7 @@ def evaluate_one(problem: dict, generator, timeout: int, solutions_dir: pathlib.
     return result
 
 
-def evaluate_io(problem: dict, generator, timeout: int, solutions_dir: pathlib.Path | None = None) -> dict:
+def evaluate_io(problem: dict, generator, timeout: int, solutions_dir: pathlib.Path | None = None, sample_index: int | None = None) -> dict:
     prompt = render_io_prompt(problem)
     raw = generator.generate(prompt, problem["dir_name"])
     code = extract_code(raw)
@@ -192,8 +193,9 @@ def evaluate_io(problem: dict, generator, timeout: int, solutions_dir: pathlib.P
     if solutions_dir is not None:
         sdir = solutions_dir / problem["dir_name"]
         sdir.mkdir(parents=True, exist_ok=True)
-        (sdir / "raw.txt").write_text(raw, encoding="utf-8")
-        (sdir / "solution.py").write_text(code, encoding="utf-8")
+        suffix = "" if (sample_index is None or sample_index == 0) else f"_{sample_index}"
+        (sdir / f"raw{suffix}.txt").write_text(raw, encoding="utf-8")
+        (sdir / f"solution{suffix}.py").write_text(code, encoding="utf-8")
 
     cases = problem.get("tests", [])
     result = {
@@ -347,8 +349,7 @@ def main() -> int:
         eval_fn = evaluate_io if p.get("mode") == "io" else evaluate_one
         samples = []
         for i in range(args.num_samples):
-            sd = solutions_dir if i == 0 else None
-            samples.append(eval_fn(p, gen, args.timeout, sd))
+            samples.append(eval_fn(p, gen, args.timeout, solutions_dir, sample_index=i))
         r = samples[0]
         r["n_samples"] = args.num_samples
         r["n_passed_samples"] = sum(1 for s in samples if s["test_pass"])
