@@ -1,0 +1,13 @@
+{
+  "id": "p021",
+  "title": "Weighted graph (I/O)",
+  "domain": "data-structure",
+  "difficulty": "hard",
+  "mode": "io",
+  "requirement": "维护一个无向带权图，支持加边、Dijkstra 最短路、最小生成树（Kruskal）。",
+  "input_format": "每行一条命令：add_edge u v w；dijkstra s t；mst。",
+  "output_format": "dijkstra 输出 \"距离 路径\"（路径顶点空格分隔）；mst 输出总权重。每行一个。",
+  "tests": [
+    {"input": "add_edge 0 1 4\nadd_edge 0 2 1\nadd_edge 2 1 2\nadd_edge 2 3 5\nadd_edge 1 3 1\ndijkstra 0 3\nmst\n", "output": "4 0 2 1 3\n4\n"}
+  ]
+}

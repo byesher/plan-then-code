@@ -1,0 +1,14 @@
+{
+  "id": "p018",
+  "title": "Binary search tree (I/O)",
+  "domain": "data-structure",
+  "difficulty": "medium",
+  "mode": "io",
+  "requirement": "实现一个不含重复值的二叉搜索树，处理命令：insert 插入、search 查找、delete 删除、inorder 中序遍历、size 查节点数。",
+  "input_format": "每行一条命令：insert v / search v / delete v / inorder / size。",
+  "output_format": "search 输出 true/false；delete 输出 true/false；inorder 输出升序的值（空格分隔）；size 输出个数。每行一个。",
+  "tests": [
+    {"input": "insert 5\ninsert 3\ninsert 8\ninsert 1\nsearch 5\nsearch 9\ninorder\ndelete 5\nsearch 5\nsize\n", "output": "true\nfalse\n1 3 5 8\ntrue\nfalse\n3\n"},
+    {"input": "insert 1\ninsert 1\nsize\n", "output": "1\n"}
+  ]
+}

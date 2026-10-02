@@ -1,0 +1,13 @@
+{
+  "id": "p023",
+  "title": "In-memory database (I/O)",
+  "domain": "system-utility",
+  "difficulty": "hard",
+  "mode": "io",
+  "requirement": "维护一个内存数据库：建表、插入行、查询所有行、计数。",
+  "input_format": "每行一条命令：create name col1 col2 ...；insert name v1 v2 ...；select name；count name。",
+  "output_format": "select 输出每行（列值空格分隔）；count 输出行数。每行一个。",
+  "tests": [
+    {"input": "create users id name age\ninsert users 1 Alice 30\ninsert users 2 Bob 25\nselect users\ncount users\n", "output": "1 Alice 30\n2 Bob 25\n2\n"}
+  ]
+}

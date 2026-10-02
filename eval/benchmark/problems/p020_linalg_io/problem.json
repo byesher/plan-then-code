@@ -1,0 +1,14 @@
+{
+  "id": "p020",
+  "title": "Linear algebra (I/O)",
+  "domain": "math-geometry",
+  "difficulty": "medium",
+  "mode": "io",
+  "requirement": "处理 2x2 矩阵运算：行列式、矩阵乘法。",
+  "input_format": "每行一条命令：det a b c d（矩阵 [[a,b],[c,d]] 的行列式）；matmul a b c d e f g h（[[a,b],[c,d]] × [[e,f],[g,h]]）。",
+  "output_format": "det 输出一个数；matmul 输出结果矩阵的四个元素（空格分隔）。每行一个。",
+  "tests": [
+    {"input": "det 1 2 3 4\n", "output": "-2.0\n"},
+    {"input": "matmul 1 2 3 4 5 6 7 8\n", "output": "19.0 22.0 43.0 50.0\n"}
+  ]
+}

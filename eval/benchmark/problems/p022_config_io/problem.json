@@ -1,0 +1,13 @@
+{
+  "id": "p022",
+  "title": "Nested config parser (I/O)",
+  "domain": "string-parsing",
+  "difficulty": "hard",
+  "mode": "io",
+  "requirement": "解析一个支持嵌套小节的配置文件，把所有键值按 \"小节.键\" 的形式展平输出。",
+  "input_format": "配置文本（读到文件结束）。格式：[a.b] 表示（可嵌套的）小节，key = value 表示键值，# 开头为注释。",
+  "output_format": "每个键值一行 \"小节.键 = 值\"，按键的字典序输出。",
+  "tests": [
+    {"input": "[database]\nhost = db.local\nport = 5432\n\n[network.timeout]\nconnect = 30\nread = 60\n", "output": "database.host = db.local\ndatabase.port = 5432\nnetwork.timeout.connect = 30\nnetwork.timeout.read = 60\n"}
+  ]
+}
