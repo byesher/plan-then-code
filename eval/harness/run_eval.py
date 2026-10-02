@@ -351,7 +351,8 @@ def main() -> int:
 
     out_dir = pathlib.Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    run_name = args.run_name or f"{args.generator}_{datetime.datetime.now():%Y%m%d_%H%M%S}"
+    base = args.run_name or args.generator
+    run_name = f"{base}_{datetime.datetime.now():%Y%m%d_%H%M%S}"
     solutions_dir = out_dir / "runs" / run_name
 
     gen = build_generator(args)
