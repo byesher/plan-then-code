@@ -25,7 +25,7 @@ import sys
 import uuid
 
 from extract import extract_code
-from prompt import render_prompt
+from prompt import render_prompt, render_io_prompt
 from generators import (
     ReferenceGenerator,
     FileGenerator,
@@ -184,6 +184,66 @@ def evaluate_one(problem: dict, generator, timeout: int, solutions_dir: pathlib.
     return result
 
 
+def evaluate_io(problem: dict, generator, timeout: int, solutions_dir: pathlib.Path | None = None) -> dict:
+    prompt = render_io_prompt(problem)
+    raw = generator.generate(prompt, problem["dir_name"])
+    code = extract_code(raw)
+
+    if solutions_dir is not None:
+        sdir = solutions_dir / problem["dir_name"]
+        sdir.mkdir(parents=True, exist_ok=True)
+        (sdir / "raw.txt").write_text(raw, encoding="utf-8")
+        (sdir / "solution.py").write_text(code, encoding="utf-8")
+
+    cases = problem.get("tests", [])
+    result = {
+        "id": problem["id"],
+        "title": problem["title"],
+        "domain": problem["domain"],
+        "difficulty": problem["difficulty"],
+        "n_tests": len(cases),
+        "compile_ok": False,
+        "test_pass": False,
+        "interface_ok": True,
+        "missing_names": [],
+        "non_stdlib_imports": [],
+        "test_output": "",
+    }
+    if not code.strip():
+        result["test_output"] = "empty solution (no code extracted)"
+        return result
+
+    td = _scratch_dir() / uuid.uuid4().hex
+    td.mkdir(parents=True)
+    try:
+        (td / "solution.py").write_text(code, encoding="utf-8")
+        env = {**os.environ}
+        passed = 0
+        notes = []
+        for case in cases:
+            try:
+                r = subprocess.run(
+                    [sys.executable, "-B", "solution.py"],
+                    cwd=td, env=env, input=case["input"], capture_output=True, text=True, timeout=timeout,
+                )
+            except subprocess.TimeoutExpired:
+                notes.append("[case] timed out")
+                continue
+            result["compile_ok"] = True
+            if r.returncode != 0:
+                notes.append(f"[case] runtime error: {r.stderr.strip()[:300]}")
+                continue
+            if r.stdout == case["output"]:
+                passed += 1
+            else:
+                notes.append(f"[case] mismatch:\n  expected={case['output']!r}\n  actual  ={r.stdout!r}")
+        result["test_pass"] = passed == len(cases) and len(cases) > 0
+        result["test_output"] = f"{passed}/{len(cases)} passed" if result["test_pass"] else "\n".join(notes)
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
+    return result
+
+
 def aggregate(results: list[dict]) -> dict:
     total = len(results)
     compiled = sum(1 for r in results if r["compile_ok"])
@@ -274,13 +334,16 @@ def main() -> int:
     gen = build_generator(args)
     results = []
     for p in problems:
-        r = evaluate_one(p, gen, args.timeout, solutions_dir)
+        if p.get("mode") == "io":
+            r = evaluate_io(p, gen, args.timeout, solutions_dir)
+        else:
+            r = evaluate_one(p, gen, args.timeout, solutions_dir)
         results.append(r)
         status = _status_of(r)
         extra = ""
-        if r["missing_names"]:
+        if r.get("missing_names"):
             extra += f"  missing={r['missing_names']}"
-        if r["non_stdlib_imports"]:
+        if r.get("non_stdlib_imports"):
             extra += f"  non_stdlib={r['non_stdlib_imports']}"
         print(f"[{r['id']}] {status}  {r['title']}  ({r['n_tests']} tests){extra}")
 

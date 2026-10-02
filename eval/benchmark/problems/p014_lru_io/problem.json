@@ -1,0 +1,14 @@
+{
+  "id": "p014",
+  "title": "LRU cache (I/O)",
+  "domain": "system-utility",
+  "difficulty": "medium",
+  "mode": "io",
+  "requirement": "实现一个固定容量的 LRU 缓存，按顺序处理命令：put 写入（容量满时淘汰最久未使用），get 读取（并标记为最近使用）。",
+  "input_format": "第一行一个整数 capacity。接下来每行一条命令：put key value 或 get key。",
+  "output_format": "对每条 get 命令输出 key 的值（不存在输出 -1），每行一个。",
+  "tests": [
+    {"input": "2\nput a 1\nput b 2\nget a\nput c 3\nget b\n", "output": "1\n-1\n"},
+    {"input": "2\nput a 1\nget a\n", "output": "1\n"}
+  ]
+}
