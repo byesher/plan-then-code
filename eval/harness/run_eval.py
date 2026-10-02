@@ -283,7 +283,8 @@ def build_generator(args):
     if args.generator == "file":
         return FileGenerator(pathlib.Path(args.solutions_dir))
     if args.generator == "local":
-        return LocalModelGenerator(args.model, max_new_tokens=args.max_new_tokens)
+        return LocalModelGenerator(args.model, max_new_tokens=args.max_new_tokens,
+                                   load_in_8bit=args.load_in_8bit, load_in_4bit=args.load_in_4bit)
     if args.generator == "openai":
         return OpenAICompatibleGenerator(args.base_url, args.model, args.api_key,
                                          max_tokens=args.max_tokens)
@@ -311,6 +312,8 @@ def main() -> int:
     ap.add_argument("--api-key", default=None)
     ap.add_argument("--max-new-tokens", type=int, default=2048)
     ap.add_argument("--max-tokens", type=int, default=4096)
+    ap.add_argument("--load-in-8bit", action="store_true", help="load model in 8-bit (bitsandbytes)")
+    ap.add_argument("--load-in-4bit", action="store_true", help="load model in 4-bit (bitsandbytes)")
     ap.add_argument("--timeout", type=int, default=120)
     ap.add_argument("--out-dir", default="../results")
     ap.add_argument("--run-name", default=None, help="run tag; defaults to <generator>_<timestamp>")
