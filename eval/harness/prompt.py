@@ -22,6 +22,20 @@ def _render_interface(interface: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def render_io_prompt(problem: dict[str, Any]) -> str:
+    """Render a 'single entry I/O' prompt: complete program reading stdin / writing stdout."""
+    return (
+        "You are an expert Python programmer. Write a complete Python program.\n\n"
+        f"# Task\n{problem['requirement']}\n\n"
+        f"# Input format\n{problem['input_format']}\n\n"
+        f"# Output format\n{problem['output_format']}\n\n"
+        "# Rules\n"
+        "- Output ONLY the Python code, with no explanation and no markdown fences.\n"
+        "- Read from standard input with input()/sys.stdin and write to standard output with print().\n"
+        "- Use only the Python standard library.\n"
+    )
+
+
 def render_prompt(problem: dict[str, Any]) -> str:
     """Render a 'direct implement' prompt: requirement + fixed interface -> code."""
     interface = _render_interface(problem["interface"])

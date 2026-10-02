@@ -1,0 +1,15 @@
+{
+  "id": "p013",
+  "title": "Merge intervals (I/O)",
+  "domain": "data-structure",
+  "difficulty": "easy",
+  "mode": "io",
+  "requirement": "读入一组整数区间，合并所有重叠或相邻的区间，输出合并后的区间。",
+  "input_format": "第一行一个整数 N（区间个数），接下来 N 行每行两个整数 start end（半开区间 [start, end)）。",
+  "output_format": "合并后的区间，每行两个整数 start end，按 start 升序。",
+  "tests": [
+    {"input": "4\n1 3\n2 6\n8 10\n15 18\n", "output": "1 6\n8 10\n15 18\n"},
+    {"input": "2\n0 2\n2 4\n", "output": "0 4\n"},
+    {"input": "0\n", "output": ""}
+  ]
+}
