@@ -88,32 +88,51 @@ def check_fields(items, required, label):
 
 
 # ────────────────────────────────────────────────────────────────
-# 1. TACO —— 走 ModelScope（HF 没 parquet，脚本走 Google Drive 被墙）
+# 1. TACO —— 直接下 HF repo 里的 arrow 数据文件（不是 Google Drive）
 # ────────────────────────────────────────────────────────────────
 def download_taco():
     print("\n" + "=" * 60)
-    print("[1/4] BAAI/TACO —— 走 ModelScope（HF 无 parquet）")
+    print("[1/4] BAAI/TACO —— 直接下 HF repo 里的 arrow 数据文件")
     print("=" * 60)
-    try:
-        from modelscope.msdatasets import MsDataset
-        ds = MsDataset.load("BAAI/TACO", split="train")
-        # MsDataset 不同版本行为不同：可能直接可迭代，也可能要 .to_hf_dataset()
+    # 关键：看 TACO.py 的 _URLS，引用的是相对路径 train/*.arrow / test/*.arrow，
+    # 这些 arrow 数据文件就托管在 HF repo 里，【不是 Google Drive】。
+    # 所以直接 huggingface-cli download 整个 repo 就能拿到数据，绕开脚本。
+    import glob
+    from datasets import load_dataset
+    # 候选位置：① 你手动下到的 ~/autodl-tmp/TACO；② 脚本默认路径
+    candidates = [
+        os.path.expanduser("~/autodl-tmp/TACO"),
+        os.path.join(BASE_DIR, "BAAI", "TACO-repo"),
+    ]
+    repo_dir = next((c for c in candidates if glob.glob(os.path.join(c, "train", "*.arrow"))), None)
+    if repo_dir is None:
+        repo_dir = candidates[1]
+        print(f"  本地没找到，下载 repo 到 {repo_dir} ...")
         try:
-            all_items = [dict(x) for x in ds]
-        except Exception:
-            all_items = [dict(x) for x in ds.to_hf_dataset()]
-        idx = uniform_indices(len(all_items), SAMPLE_SIZE)
-        sampled = [all_items[i] for i in idx]
-        save_jsonl(sampled, "BAAI/TACO/train_sampled.jsonl")
-        check_fields(sampled, ["question", "solutions", "input_output", "difficulty"], "TACO")
-    except Exception as e1:
-        print(f"  ❌ ModelScope 方式失败: {type(e1).__name__}: {e1}")
-        if isinstance(e1, ModuleNotFoundError) and e1.name:
-            print(f"    → 缺依赖，先补：pip install {e1.name}")
-        print("    备选 1：命令行下载到本地目录，再手工看结构：")
-        print('      modelscope download --model BAAI/TACO --type dataset --local_dir ./TACO')
-        print("    备选 2：若你有 Google Drive 通道，可尝试 HF 脚本(会走 Google Drive)：")
-        print('      load_dataset("BAAI/TACO", split="train", trust_remote_code=True)')
+            subprocess.run(
+                ["huggingface-cli", "download", "BAAI/TACO",
+                 "--repo-type", "dataset", "--local-dir", repo_dir],
+                check=True,
+            )
+        except Exception as e:
+            print(f"  ❌ 下载失败: {type(e).__name__}: {e}")
+            print("     手动执行：huggingface-cli download BAAI/TACO --repo-type dataset --local-dir ~/autodl-tmp/TACO")
+            return
+    else:
+        print(f"  使用已存在的 {repo_dir}")
+
+    train_files = sorted(glob.glob(os.path.join(repo_dir, "train", "*.arrow")))
+    if not train_files:
+        print("  ❌ 没找到 train/*.arrow，说明 repo 里没有数据文件。")
+        return
+    ds = load_dataset("arrow", data_files=train_files)
+    if hasattr(ds, "keys") and not hasattr(ds, "features"):
+        ds = ds[next(iter(ds.keys()))]
+    items = [dict(x) for x in ds]
+    idx = uniform_indices(len(items), SAMPLE_SIZE)
+    sampled = [items[i] for i in idx]
+    save_jsonl(sampled, "BAAI/TACO/train_sampled.jsonl")
+    check_fields(sampled, ["question", "solutions", "input_output", "difficulty"], "TACO")
 
 
 # ────────────────────────────────────────────────────────────────
@@ -134,7 +153,7 @@ def download_apps():
             url = (f"https://hf-mirror.com/datasets/codeparrot/apps/resolve/"
                    f"refs%2Fconvert%2Fparquet/{cfg}/{split}/0000.parquet")
             try:
-                ds = load_dataset("parquet", data_files=url)
+                ds = load_dataset("parquet", data_files={"train": url}, split="train")
                 items = [dict(x) for x in ds]
                 if items and "input_output" in items[0]:
                     idx = uniform_indices(len(items), SAMPLE_SIZE)
@@ -160,16 +179,26 @@ def download_ds1000():
     print("\n" + "=" * 60)
     print("[3/4] DS-1000 —— 从 GitHub 下 JSONL（工程向/数据科学）")
     print("=" * 60)
-    # raw.githubusercontent.com 直连被墙（Connection reset），改用 git clone（更稳）
-    repo_url = "https://github.com/xlang-ai/DS-1000.git"
+    # github.com 直连超时；依次尝试国内可达的 GitHub 镜像
+    mirrors = [
+        "https://github.com/xlang-ai/DS-1000.git",
+        "https://kkgithub.com/xlang-ai/DS-1000.git",
+        "https://gitclone.com/github.com/xlang-ai/DS-1000",
+    ]
     clone_dir = os.path.join(BASE_DIR, "xlangai", "DS-1000-repo")
     if not os.path.isdir(os.path.join(clone_dir, "data")):
-        print(f"  clone {repo_url} ...")
-        try:
-            subprocess.run(["git", "clone", "--depth", "1", repo_url, clone_dir], check=True)
-        except Exception as e:
-            print(f"  ❌ clone 失败: {type(e).__name__}: {e}")
-            print("    备选：用 ghproxy 代理下 raw，或去 https://github.com/xlang-ai/DS-1000 手动下 data/ 目录。")
+        ok = False
+        for repo_url in mirrors:
+            print(f"  尝试 clone {repo_url} ...")
+            try:
+                subprocess.run(["git", "clone", "--depth", "1", repo_url, clone_dir],
+                               check=True, timeout=300)
+                ok = True
+                break
+            except Exception as e:
+                print(f"    ⚠️  失败: {type(e).__name__}: {e}")
+        if not ok:
+            print("  ❌ 所有镜像都 clone 失败。DS-1000 非核心（函数级、非 I/O），可暂时跳过。")
             return
     else:
         print(f"  已存在 {clone_dir}，跳过 clone")
