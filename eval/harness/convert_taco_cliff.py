@@ -197,9 +197,11 @@ def main():
                 break
             n, item = in_bin[i]
             sols = _as_list(item.get("solutions"))
-            ref = sols[0] if sols else ""
             tests = parse_tests(item.get("input_output"))
-            if not tests or not ref or not ref_passes(ref, tests):
+            if not tests:
+                continue
+            ref = sols[0] if sols else ""
+            if not ref or not ref_passes(ref, tests):
                 continue
             selected.append((n, b, item))
             got += 1
