@@ -241,8 +241,8 @@ def evaluate_io(problem: dict, generator, timeout: int, solutions_dir: pathlib.P
                     cwd=td, env=env, input=case["input"], capture_output=True, text=True, timeout=timeout,
                 )
             except subprocess.TimeoutExpired:
-                notes.append("[case] timed out")
-                continue
+                notes.append("[case] timed out (likely infinite loop); skipping remaining cases")
+                break
             result["compile_ok"] = True
             if r.returncode != 0:
                 notes.append(f"[case] runtime error: {r.stderr.strip()[:300]}")
