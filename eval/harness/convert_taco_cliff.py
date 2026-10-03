@@ -34,6 +34,10 @@ import glob
 import json
 import os
 import re
+import shutil
+import subprocess
+import sys
+import tempfile
 
 from datasets import Dataset, concatenate_datasets
 
@@ -42,7 +46,7 @@ OUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "benchma
 
 BINS = [(0, 20), (20, 40), (40, 60), (60, 80), (80, 120), (120, 200), (200, 10**9)]
 PER_BIN = 10
-MAX_TESTS = 3
+MAX_TESTS = 5
 
 
 def _as_list(v):
@@ -91,6 +95,37 @@ def parse_tests(input_output_val):
     for i in range(min(len(ins), len(outs), MAX_TESTS)):
         tests.append({"input": _norm(ins[i]), "output": _norm(outs[i])})
     return tests
+
+
+def _norm_out(text):
+    """对齐 harness 的输出归一化：去行尾空白 + 单独出现的 true/false 小写化。"""
+    lines = [ln.strip() for ln in text.splitlines()]
+    lines = [ln.lower() if ln.lower() in ("true", "false") else ln for ln in lines]
+    return "\n".join(lines)
+
+
+def ref_passes(ref_code, tests):
+    """参考解写临时文件跑一遍 tests，全部通过才返回 True。
+    用于过滤：Python2 运行时错误(raw_input)、错误解、数据不一致的题。"""
+    td = tempfile.mkdtemp(prefix="cliff_check_")
+    try:
+        with open(os.path.join(td, "solution.py"), "w", encoding="utf-8") as f:
+            f.write(ref_code)
+        for case in tests:
+            try:
+                r = subprocess.run(
+                    [sys.executable, "-B", "solution.py"],
+                    cwd=td, input=case["input"], capture_output=True, text=True, timeout=10,
+                )
+            except subprocess.TimeoutExpired:
+                return False
+            if r.returncode != 0:
+                return False
+            if _norm_out(r.stdout) != _norm_out(case["output"]):
+                return False
+        return True
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
 
 
 def is_valid_py3(code):
@@ -145,18 +180,30 @@ def main():
         lo, hi = b[0], b[1] if b[1] < 10**9 else "∞"
         print(f"  [{lo}, {hi}): {bins_count[b]} 题")
 
-    # 第二遍：每桶按行数均匀抽 PER_BIN 个
+    # 第二遍：每桶按行数均匀取候选，逐个自检参考解，凑满 PER_BIN 个「参考解能通过」的
     selected = []  # (line_count, bin, item)
     for b in BINS:
         in_bin = sorted([(n, item) for (n, bb, item) in kept if bb == b], key=lambda x: x[0])
         if not in_bin:
             print(f"  ⚠️ 桶 [{b[0]}, {b[1]}): 0 题，跳过")
             continue
-        k = min(PER_BIN, len(in_bin))
-        idx = [int(i * (len(in_bin) - 1) / (k - 1)) for i in range(k)] if k > 1 else [0]
-        for i in idx:
-            selected.append((in_bin[i][0], b, in_bin[i][1]))
-        print(f"  桶 [{b[0]}, {b[1]}): 抽 {k}/{len(in_bin)}")
+        n_cand = len(in_bin)
+        k = min(PER_BIN * 3, n_cand)  # 取 3 倍缓冲，供自检淘汰
+        order = [int(i * (n_cand - 1) / (k - 1)) for i in range(k)] if k > 1 else list(range(n_cand))
+        order = sorted(set(order))  # 去重、升序，保持均匀
+        got = 0
+        for i in order:
+            if got >= PER_BIN:
+                break
+            n, item = in_bin[i]
+            sols = _as_list(item.get("solutions"))
+            ref = sols[0] if sols else ""
+            tests = parse_tests(item.get("input_output"))
+            if not tests or not ref or not ref_passes(ref, tests):
+                continue
+            selected.append((n, b, item))
+            got += 1
+        print(f"  桶 [{b[0]}, {b[1]}): 抽 {got}/{len(in_bin)}")
 
     # 写文件（先清空旧目录，避免上次残留）
     import shutil
