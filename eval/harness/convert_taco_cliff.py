@@ -73,6 +73,15 @@ def ref_line_count(solutions_val):
     return len(sols[0].splitlines())
 
 
+def _norm(x):
+    """把可能是 str 或 list 的样例统一成 str（list 用换行拼接）。"""
+    if isinstance(x, str):
+        return x
+    if isinstance(x, (list, tuple)):
+        return "\n".join(str(y) for y in x)
+    return str(x)
+
+
 def parse_tests(input_output_val):
     """返回前 MAX_TESTS 组 [{'input': ..., 'output': ...}]。"""
     io = _as_io(input_output_val)
@@ -80,7 +89,7 @@ def parse_tests(input_output_val):
     outs = io.get("outputs", [])
     tests = []
     for i in range(min(len(ins), len(outs), MAX_TESTS)):
-        tests.append({"input": ins[i], "output": outs[i]})
+        tests.append({"input": _norm(ins[i]), "output": _norm(outs[i])})
     return tests
 
 
@@ -149,7 +158,10 @@ def main():
             selected.append((in_bin[i][0], b, in_bin[i][1]))
         print(f"  桶 [{b[0]}, {b[1]}): 抽 {k}/{len(in_bin)}")
 
-    # 写文件
+    # 写文件（先清空旧目录，避免上次残留）
+    import shutil
+    if os.path.isdir(OUT_DIR):
+        shutil.rmtree(OUT_DIR)
     os.makedirs(OUT_DIR, exist_ok=True)
     manifest = {}
     n_written = 0
