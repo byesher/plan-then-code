@@ -46,7 +46,7 @@ OUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "benchma
 
 BINS = [(0, 20), (20, 40), (40, 60), (60, 80), (80, 120), (120, 200), (200, 10**9)]
 PER_BIN = 10
-MAX_TESTS = 5
+MAX_TESTS = 20
 
 
 def _as_list(v):

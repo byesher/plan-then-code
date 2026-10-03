@@ -215,6 +215,7 @@ def evaluate_io(problem: dict, generator, timeout: int, solutions_dir: pathlib.P
         "domain": problem["domain"],
         "difficulty": problem["difficulty"],
         "n_tests": len(cases),
+        "n_passed": 0,
         "compile_ok": False,
         "test_pass": False,
         "interface_ok": True,
@@ -251,6 +252,7 @@ def evaluate_io(problem: dict, generator, timeout: int, solutions_dir: pathlib.P
             else:
                 notes.append(f"[case] mismatch:\n  expected={case['output']!r}\n  actual  ={r.stdout!r}")
         result["test_pass"] = passed == len(cases) and len(cases) > 0
+        result["n_passed"] = passed
         result["test_output"] = f"{passed}/{len(cases)} passed" if result["test_pass"] else "\n".join(notes)
     finally:
         shutil.rmtree(td, ignore_errors=True)
@@ -265,6 +267,8 @@ def aggregate(results: list[dict]) -> dict:
     non_stdlib = sum(1 for r in results if r.get("non_stdlib_imports"))
     n_samples = results[0].get("n_samples", 1) if results else 1
     total_passed_samples = sum(r.get("n_passed_samples", 1 if r["test_pass"] else 0) for r in results)
+    total_cases = sum(r.get("n_tests", 0) * r.get("n_samples", n_samples) for r in results)
+    total_passed_cases = sum(r.get("n_passed_cases", 0) for r in results)
     return {
         "total": total,
         "compiled": compiled,
@@ -279,6 +283,7 @@ def aggregate(results: list[dict]) -> dict:
         "test_pass_rate_among_interface_ok": (passed / interface_ok) if interface_ok else 0.0,
         "n_samples": n_samples,
         "pass_at_1_avg": (total_passed_samples / (total * n_samples)) if total else 0.0,
+        "case_pass_rate": (total_passed_cases / total_cases) if total_cases else 0.0,
     }
 
 
@@ -367,6 +372,7 @@ def main() -> int:
         r = samples[0]
         r["n_samples"] = args.num_samples
         r["n_passed_samples"] = sum(1 for s in samples if s["test_pass"])
+        r["n_passed_cases"] = sum(s.get("n_passed", 0) for s in samples)
         r["test_pass"] = any(s["test_pass"] for s in samples)
         results.append(r)
         status = _status_of(r)
