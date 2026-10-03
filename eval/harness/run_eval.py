@@ -362,6 +362,8 @@ def main() -> int:
         samples = []
         for i in range(args.num_samples):
             samples.append(eval_fn(p, gen, args.timeout, solutions_dir, sample_index=i))
+            if args.num_samples > 1:
+                print(f"    [{p['id']}] sample {i+1}/{args.num_samples}", flush=True)
         r = samples[0]
         r["n_samples"] = args.num_samples
         r["n_passed_samples"] = sum(1 for s in samples if s["test_pass"])
