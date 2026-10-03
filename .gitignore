@@ -7,7 +7,10 @@ __pycache__/
 eval/.scratch/
 
 # downloaded model weights (large, local only)
-Qwen2.5-7B-Instruct/
+Qwen2.5-*-Instruct/
 
 # generated eval outputs (all re-runnable)
 eval/results/
+
+# downloaded dataset samples (large, local only)
+eval/harness/sampled_datasets/
