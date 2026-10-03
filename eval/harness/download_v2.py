@@ -108,6 +108,8 @@ def download_taco():
         check_fields(sampled, ["question", "solutions", "input_output", "difficulty"], "TACO")
     except Exception as e1:
         print(f"  ❌ ModelScope 方式失败: {type(e1).__name__}: {e1}")
+        if isinstance(e1, ModuleNotFoundError) and e1.name:
+            print(f"    → 缺依赖，先补：pip install {e1.name}")
         print("    备选 1：命令行下载到本地目录，再手工看结构：")
         print('      modelscope download --model BAAI/TACO --type dataset --local_dir ./TACO')
         print("    备选 2：若你有 Google Drive 通道，可尝试 HF 脚本(会走 Google Drive)：")
@@ -122,29 +124,33 @@ def download_apps():
     print("[2/4] codeparrot/apps —— 重下带 input_output 的版本")
     print("=" * 60)
     from datasets import load_dataset
-    # 依次尝试；每试一个都验证 input_output 是否真的在
-    attempts = [
-        ("标准 test split", lambda: load_dataset("codeparrot/apps", split="test")),
-        ("community 配置 train", lambda: load_dataset("codeparrot/apps", "community", split="train")),
-    ]
-    for label, fn in attempts:
-        try:
-            ds = fn()
-            items = [dict(x) for x in ds]
-            if items and "input_output" in items[0]:
-                idx = uniform_indices(len(items), SAMPLE_SIZE)
-                sampled = [items[i] for i in idx]
-                save_jsonl(sampled, "codeparrot/apps/test_sampled.jsonl")
-                check_fields(sampled, ["question", "solutions", "input_output", "difficulty"], "APPS")
-                return
-            else:
-                got = sorted(items[0].keys()) if items else "无"
-                print(f"  ⚠️  [{label}] 缺 input_output，实际字段: {got}")
-        except Exception as e:
-            print(f"  ⚠️  [{label}] 失败: {type(e).__name__}: {e}")
-    print("  ❌ APPS 重下失败：上述候选都没拿到 input_output。")
-    print("     请去 https://huggingface.co/datasets/codeparrot/apps 确认哪个 parquet 分片含全字段，")
-    print("     再直连该分片 URL（参照 patch.py 的 load_dataset('parquet', data_files=...) 写法）。")
+    # 已知事实：
+    #   1) 配置名是 all / introductory / interview / competition（不是 community）；
+    #   2) apps.py 脚本有 gzip 解码 bug（UnicodeDecodeError），只能走 parquet 直连；
+    #   3) patch.py 之前用 all/test 拿到的是精简版（test split 可能故意去掉 input_output/difficulty），
+    #      所以这次优先用 train split，并逐个验证 input_output 是否真的在。
+    for cfg in ["introductory", "interview", "competition", "all"]:
+        for split in ["train", "test"]:
+            url = (f"https://hf-mirror.com/datasets/codeparrot/apps/resolve/"
+                   f"refs%2Fconvert%2Fparquet/{cfg}/{split}/0000.parquet")
+            try:
+                ds = load_dataset("parquet", data_files=url)
+                items = [dict(x) for x in ds]
+                if items and "input_output" in items[0]:
+                    idx = uniform_indices(len(items), SAMPLE_SIZE)
+                    sampled = [items[i] for i in idx]
+                    save_jsonl(sampled, f"codeparrot/apps/{cfg}_{split}_sampled.jsonl")
+                    check_fields(sampled, ["question", "solutions", "input_output", "difficulty"],
+                                 f"APPS[{cfg}/{split}]")
+                    return
+                else:
+                    got = sorted(items[0].keys()) if items else "无"
+                    print(f"  ⚠️  [{cfg}/{split}] 缺 input_output，实际字段: {got}")
+            except Exception as e:
+                print(f"  ⚠️  [{cfg}/{split}] 失败: {type(e).__name__}: {e}")
+    print("  ❌ APPS 重下失败：以上 parquet 分片都没拿到 input_output。")
+    print("     去 https://huggingface.co/datasets/codeparrot/apps/tree/main/refs/convert/parquet")
+    print("     看实际有哪些 config/split 分片，再改上面的 URL。")
 
 
 # ────────────────────────────────────────────────────────────────
@@ -154,32 +160,39 @@ def download_ds1000():
     print("\n" + "=" * 60)
     print("[3/4] DS-1000 —— 从 GitHub 下 JSONL（工程向/数据科学）")
     print("=" * 60)
-    data_url = "https://raw.githubusercontent.com/xlang-ai/DS-1000/main/data/ds1000_data.jsonl"
-    test_url = "https://raw.githubusercontent.com/xlang-ai/DS-1000/main/data/ds1000_test_code.py"
-    out_dir = os.path.join(BASE_DIR, "xlangai", "DS-1000")
-    os.makedirs(out_dir, exist_ok=True)
-    data_dst = os.path.join(out_dir, "ds1000_data.jsonl")
-    test_dst = os.path.join(out_dir, "ds1000_test_code.py")
+    # raw.githubusercontent.com 直连被墙（Connection reset），改用 git clone（更稳）
+    repo_url = "https://github.com/xlang-ai/DS-1000.git"
+    clone_dir = os.path.join(BASE_DIR, "xlangai", "DS-1000-repo")
+    if not os.path.isdir(os.path.join(clone_dir, "data")):
+        print(f"  clone {repo_url} ...")
+        try:
+            subprocess.run(["git", "clone", "--depth", "1", repo_url, clone_dir], check=True)
+        except Exception as e:
+            print(f"  ❌ clone 失败: {type(e).__name__}: {e}")
+            print("    备选：用 ghproxy 代理下 raw，或去 https://github.com/xlang-ai/DS-1000 手动下 data/ 目录。")
+            return
+    else:
+        print(f"  已存在 {clone_dir}，跳过 clone")
 
-    def fetch(url, dst):
-        print(f"  下载 {url}")
-        urllib.request.urlretrieve(url, dst)
-        print(f"  ✅ 已保存 {dst}")
-
-    try:
-        fetch(data_url, data_dst)
-        fetch(test_url, test_dst)
-    except Exception as e:
-        print(f"  ❌ DS-1000 下载失败: {type(e).__name__}: {e}")
-        print("    可能 raw 地址变了，去 https://github.com/xlang-ai/DS-1000 确认 data/ 下的文件名。")
+    data_src = os.path.join(clone_dir, "data", "ds1000_data.jsonl")
+    test_src = os.path.join(clone_dir, "data", "ds1000_test_code.py")
+    if not os.path.isfile(data_src):
+        print(f"  ❌ 找不到 {data_src}，请确认 repo 里 data/ 的文件名。")
         return
 
-    with open(data_dst, encoding="utf-8") as f:
+    out_dir = os.path.join(BASE_DIR, "xlangai", "DS-1000")
+    os.makedirs(out_dir, exist_ok=True)
+    import shutil
+    shutil.copy(data_src, os.path.join(out_dir, "ds1000_data.jsonl"))
+    shutil.copy(test_src, os.path.join(out_dir, "ds1000_test_code.py"))
+    print(f"  ✅ 已复制 data 到 {out_dir}")
+
+    with open(data_src, encoding="utf-8") as f:
         lines = [json.loads(ln) for ln in f if ln.strip()]
     idx = uniform_indices(len(lines), SAMPLE_SIZE)
     sampled = [lines[i] for i in idx]
     save_jsonl(sampled, "xlangai/DS-1000/ds1000_sampled.jsonl")
-    # 注意：DS-1000 的测试样例不在 jsonl 里，而在同目录的 ds1000_test_code.py（已一并下载）。
+    # 注意：DS-1000 的测试样例不在 jsonl 里，而在同目录的 ds1000_test_code.py（已一并复制）。
     check_fields(sampled, ["prompt", "reference_code", "metadata"], "DS-1000")
 
 
