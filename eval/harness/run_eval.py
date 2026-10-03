@@ -374,6 +374,22 @@ def main() -> int:
         r["n_passed_samples"] = sum(1 for s in samples if s["test_pass"])
         r["n_passed_cases"] = sum(s.get("n_passed", 0) for s in samples)
         r["test_pass"] = any(s["test_pass"] for s in samples)
+        # 保存题目元信息 + 每个样本的明细（之前只留了 samples[0]，其余样本信息全丢了）
+        r["dir_name"] = p.get("dir_name")
+        r["_bin"] = p.get("_bin")
+        r["_ref_lines"] = p.get("_ref_lines")
+        r["samples"] = [
+            {
+                "sample_index": i,
+                "n_passed": s.get("n_passed"),
+                "n_tests": s.get("n_tests"),
+                "test_pass": s.get("test_pass"),
+                "compile_ok": s.get("compile_ok"),
+                "status": _status_of(s),
+                "test_output": (s.get("test_output") or "")[:500],
+            }
+            for i, s in enumerate(samples)
+        ]
         results.append(r)
         status = _status_of(r)
         extra = ""
@@ -389,7 +405,19 @@ def main() -> int:
     print("\n=== aggregate ===")
     print(json.dumps(agg, indent=2, ensure_ascii=False))
 
-    report = {"aggregate": agg, "results": results, "run_name": run_name}
+    report = {
+        "aggregate": agg,
+        "results": results,
+        "run_name": run_name,
+        "config": {
+            "generator": args.generator,
+            "model": args.model,
+            "temperature": args.temperature,
+            "num_samples": args.num_samples,
+            "max_new_tokens": args.max_new_tokens,
+            "problems": args.problems,
+        },
+    }
     out_path = out_dir / f"report_{run_name}.json"
     out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\nreport saved to {out_path}")

@@ -235,6 +235,8 @@ def main():
             "input_format": "As described in the Input section of the task statement.",
             "output_format": "As described in the Output section of the task statement.",
             "tests": tests,
+            "_ref_lines": n,
+            "_bin": f"[{b[0]},{b[1]})",
         }
         with open(os.path.join(d, "problem.json"), "w", encoding="utf-8") as f:
             json.dump(problem, f, ensure_ascii=False, indent=2)
