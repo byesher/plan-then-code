@@ -98,7 +98,7 @@ def download_taco():
     # 这些 arrow 数据文件就托管在 HF repo 里，【不是 Google Drive】。
     # 所以直接 huggingface-cli download 整个 repo 就能拿到数据，绕开脚本。
     import glob
-    from datasets import load_dataset
+    from datasets import Dataset, concatenate_datasets
     # 候选位置：① 你手动下到的 ~/autodl-tmp/TACO；② 脚本默认路径
     candidates = [
         os.path.expanduser("~/autodl-tmp/TACO"),
@@ -125,9 +125,8 @@ def download_taco():
     if not train_files:
         print("  ❌ 没找到 train/*.arrow，说明 repo 里没有数据文件。")
         return
-    ds = load_dataset("arrow", data_files=train_files)
-    if hasattr(ds, "keys") and not hasattr(ds, "features"):
-        ds = ds[next(iter(ds.keys()))]
+    # 关键：Dataset.from_file 直接读 arrow，不写 HF 缓存（load_dataset 会重写一份，把盘写爆）
+    ds = concatenate_datasets([Dataset.from_file(f) for f in train_files])
     items = [dict(x) for x in ds]
     idx = uniform_indices(len(items), SAMPLE_SIZE)
     sampled = [items[i] for i in idx]
@@ -142,7 +141,7 @@ def download_apps():
     print("\n" + "=" * 60)
     print("[2/4] codeparrot/apps —— 重下带 input_output 的版本")
     print("=" * 60)
-    from datasets import load_dataset
+    from datasets import Dataset
     # 已知事实：
     #   1) 配置名是 all / introductory / interview / competition（不是 community）；
     #   2) apps.py 脚本有 gzip 解码 bug（UnicodeDecodeError），只能走 parquet 直连；
@@ -152,8 +151,13 @@ def download_apps():
         for split in ["train", "test"]:
             url = (f"https://hf-mirror.com/datasets/codeparrot/apps/resolve/"
                    f"refs%2Fconvert%2Fparquet/{cfg}/{split}/0000.parquet")
+            local = os.path.join("/root/autodl-tmp", f"apps_{cfg}_{split}.parquet")
             try:
-                ds = load_dataset("parquet", data_files={"train": url}, split="train")
+                if not os.path.isfile(local):
+                    print(f"  下载 {url}")
+                    urllib.request.urlretrieve(url, local)
+                # 关键：Dataset.from_parquet 直接读，不写 HF 缓存
+                ds = Dataset.from_parquet(local)
                 items = [dict(x) for x in ds]
                 if items and "input_output" in items[0]:
                     idx = uniform_indices(len(items), SAMPLE_SIZE)
@@ -177,51 +181,33 @@ def download_apps():
 # ────────────────────────────────────────────────────────────────
 def download_ds1000():
     print("\n" + "=" * 60)
-    print("[3/4] DS-1000 —— 从 GitHub 下 JSONL（工程向/数据科学）")
+    print("[3/4] DS-1000 —— 读 data/ds1000.jsonl.gz（gzip 压缩的 jsonl）")
     print("=" * 60)
-    # github.com 直连超时；依次尝试国内可达的 GitHub 镜像
-    mirrors = [
-        "https://github.com/xlang-ai/DS-1000.git",
-        "https://kkgithub.com/xlang-ai/DS-1000.git",
-        "https://gitclone.com/github.com/xlang-ai/DS-1000",
-    ]
+    import gzip
+    # 真实数据文件是 data/ds1000.jsonl.gz（gzip 压缩），不是 ds1000_data.jsonl。
+    # 测试样例也不在单独文件里，而在每题 prompt 的 docstring 例子里 + code_context 字段。
     clone_dir = os.path.join(BASE_DIR, "xlangai", "DS-1000-repo")
-    if not os.path.isdir(os.path.join(clone_dir, "data")):
-        ok = False
-        for repo_url in mirrors:
-            print(f"  尝试 clone {repo_url} ...")
-            try:
-                subprocess.run(["git", "clone", "--depth", "1", repo_url, clone_dir],
-                               check=True, timeout=300)
-                ok = True
-                break
-            except Exception as e:
-                print(f"    ⚠️  失败: {type(e).__name__}: {e}")
-        if not ok:
-            print("  ❌ 所有镜像都 clone 失败。DS-1000 非核心（函数级、非 I/O），可暂时跳过。")
+    gz_path = os.path.join(clone_dir, "data", "ds1000.jsonl.gz")
+    if not os.path.isfile(gz_path):
+        print(f"  找不到 {gz_path}，重新 clone ...")
+        try:
+            subprocess.run(["git", "clone", "--depth", "1",
+                            "https://github.com/xlang-ai/DS-1000.git", clone_dir],
+                           check=True, timeout=300)
+        except Exception as e:
+            print(f"  ❌ clone 失败: {type(e).__name__}: {e}")
+            print("    备选：手动去 https://github.com/xlang-ai/DS-1000 下 data/ds1000.jsonl.gz 放到该目录")
             return
-    else:
-        print(f"  已存在 {clone_dir}，跳过 clone")
-
-    data_src = os.path.join(clone_dir, "data", "ds1000_data.jsonl")
-    test_src = os.path.join(clone_dir, "data", "ds1000_test_code.py")
-    if not os.path.isfile(data_src):
-        print(f"  ❌ 找不到 {data_src}，请确认 repo 里 data/ 的文件名。")
+    if not os.path.isfile(gz_path):
+        print("  ❌ 仍找不到 data/ds1000.jsonl.gz。")
         return
 
-    out_dir = os.path.join(BASE_DIR, "xlangai", "DS-1000")
-    os.makedirs(out_dir, exist_ok=True)
-    import shutil
-    shutil.copy(data_src, os.path.join(out_dir, "ds1000_data.jsonl"))
-    shutil.copy(test_src, os.path.join(out_dir, "ds1000_test_code.py"))
-    print(f"  ✅ 已复制 data 到 {out_dir}")
-
-    with open(data_src, encoding="utf-8") as f:
+    with gzip.open(gz_path, "rt", encoding="utf-8") as f:
         lines = [json.loads(ln) for ln in f if ln.strip()]
     idx = uniform_indices(len(lines), SAMPLE_SIZE)
     sampled = [lines[i] for i in idx]
     save_jsonl(sampled, "xlangai/DS-1000/ds1000_sampled.jsonl")
-    # 注意：DS-1000 的测试样例不在 jsonl 里，而在同目录的 ds1000_test_code.py（已一并复制）。
+    # 字段：metadata(problem_id/library/perturbation_type) + prompt + reference_code + code_context
     check_fields(sampled, ["prompt", "reference_code", "metadata"], "DS-1000")
 
 
