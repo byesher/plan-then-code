@@ -1,7 +1,11 @@
 # plan-then-code — 评测基准（eval）
 
-本目录用于给「多函数模块代码生成」打分：给定需求 + 公开接口签名，让模型补实现，
+本目录用于评测模型的**端到端写代码能力**：给定自然语言需求，让模型自由发挥写出完整代码，
 然后测 **编译通过率 + 测试通过率**，用于微调前（baseline）vs 微调后的对照。
+
+> **主要口径（重要）**：主指标 = **I/O 题的 pass@1（一次性写对）**；接口题（给定签名+契约的实现题）只作参考。
+> 大纲（plan-then-code 的中间结构）是 SFT 注入的**内部手段**，评测端从不要求、也不检查模型是否输出大纲。
+> 完整分模式拆解与结论见 [analysis.md](analysis.md)。
 
 ## 目录结构
 
@@ -59,9 +63,11 @@ python run_eval.py --problems ../benchmark/problems --generator openai \
 
 ## 指标口径
 
-- `compile_rate`：能 `import solution` 的题数 / 总题数。
-- `test_pass_rate`：测试全过的题数 / 总题数（**pass@1**，贪心解码 temperature≈0）。
-- 微调前后对比必须：同一套题、同一套脚本、同一解码参数。
+- `compile_rate`：能编译（`import solution` 或脚本能跑）的题数 / 总题数。
+- `test_pass_rate`：`--num-samples k` 时为 **pass@k**（k 次里至少一次全过的题数 / 总题数）。
+- `pass_at_1_avg`：**pass@1**（主指标），所有样本里测试全过的比例，最稳定。
+- **主指标 = I/O 题的 `pass_at_1_avg`**；接口题只作参考（见 [analysis.md](analysis.md)）。
+- 微调前后对比必须：同一套题、同一套脚本、同一解码参数（temperature、num-samples）。
 
 ## 题目格式（造新题时照抄）
 
@@ -85,6 +91,24 @@ python run_eval.py --problems ../benchmark/problems --generator openai \
    ```
 2. `tests.py`：`from solution import ...` 后写 `def test_xxx()`，用 `assert`。
 3. `reference.py`：一份能过测试的标准实现（用于自检）。
+
+**I/O 题（主评测题）格式**：`problem.json` 设 `"mode": "io"`，样例直接内嵌在 `tests`，不需要 `interface` 和 `tests.py`：
+
+```json
+{
+  "id": "p015",
+  "title": "INI parser (I/O)",
+  "domain": "string-parsing",
+  "difficulty": "medium",
+  "mode": "io",
+  "requirement": "自然语言需求描述",
+  "input_format": "输入格式说明（stdin）",
+  "output_format": "输出格式说明（stdout）",
+  "tests": [
+    {"input": "...", "output": "..."}
+  ]
+}
+```
 
 写完后单题自检：
 
