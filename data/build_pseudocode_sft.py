@@ -27,9 +27,10 @@ assistant 输出里，代码包在 ```python ... ``` 围栏里，伪代码是编
   data/taco_train/_sft_manifest.json —— 加工统计（成功/失败条数、耗时）
 
 【运行】
-  export DEEPSEEK_API_KEY=sk-xxx     # 或改下方 API_KEY
+  export DASHSCOPE_API_KEY=sk-xxx    # 阿里云百炼 DashScope 的 API Key（Qwen-Max）
   python data/build_pseudocode_sft.py
 
+  换模型/供应商只改底部「强 LLM API」配置块（OpenAI 兼容，DeepSeek/GPT 也能用）。
 依赖：requests（pip install requests）
 """
 import json
@@ -46,10 +47,15 @@ OUT_PATH = os.path.join(BASE_DIR, "taco_train", "train_sft.jsonl")
 SAMPLE_PATH = os.path.join(BASE_DIR, "taco_train", "_sft_sample.json")
 MANIFEST_PATH = os.path.join(BASE_DIR, "taco_train", "_sft_manifest.json")
 
-# ── 强 LLM API（默认 DeepSeek，OpenAI 兼容；换 Qwen/GPT 只改这几个）──
-API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
-API_URL = os.environ.get("DEEPSEEK_API_URL", "https://api.deepseek.com/chat/completions")
-MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+# ── 强 LLM API（默认通义千问 Qwen-Max，阿里云百炼 DashScope 的 OpenAI 兼容模式）──
+# 换模型/供应商只改这几个：DASHSCOPE_API_KEY / DASHSCOPE_API_BASE / QWEN_MODEL
+API_KEY = os.environ.get("DASHSCOPE_API_KEY", "")
+API_BASE = os.environ.get("DASHSCOPE_API_BASE", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+MODEL = os.environ.get("QWEN_MODEL", "qwen-max")
+API_URL = f"{API_BASE.rstrip('/')}/chat/completions"
+# Qwen 的思考(reasoning)模式：关掉省 token、更快，且 content 直接是干净伪代码。
+# 若 DashScope 报「未知参数 enable_thinking」，把下面改成 None（不发送该字段）即可。
+ENABLE_THINKING = False
 
 # ── 加工参数 ──────────────────────────────────────────────────
 PSEUDO_LANG = "中文"      # 伪代码语言（可改英文；这是后续可消融的设计变量之一）
@@ -84,21 +90,27 @@ ASSISTANT_TEMPLATE = "【伪代码】\n{pseudocode}\n\n【代码】\n```python\n
 # ── LLM 调用（OpenAI 兼容 chat/completions，带重试）────────────
 def call_llm(messages):
     if not API_KEY:
-        raise RuntimeError("未设置 DEEPSEEK_API_KEY。先 export DEEPSEEK_API_KEY=sk-xxx")
+        raise RuntimeError("未设置 DASHSCOPE_API_KEY。先 export DASHSCOPE_API_KEY=sk-xxx")
     headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
     payload = {
         "model": MODEL,
         "messages": messages,
         "temperature": LLM_TEMPERATURE,
-        "max_tokens": 2048,
+        "max_tokens": 4096,
         "stream": False,
     }
+    if ENABLE_THINKING is not None:
+        payload["enable_thinking"] = ENABLE_THINKING
     last_err = None
     for attempt in range(MAX_RETRIES):
         try:
             r = requests.post(API_URL, json=payload, headers=headers, timeout=LLM_TIMEOUT)
             r.raise_for_status()
-            return r.json()["choices"][0]["message"]["content"].strip()
+            msg = r.json()["choices"][0]["message"]
+            content = (msg.get("content") or "").strip()
+            if not content:
+                raise RuntimeError(f"LLM 返回空 content：{str(r.json())[:300]}")
+            return content
         except Exception as e:
             last_err = e
             time.sleep(2 ** attempt)  # 1, 2, 4 秒退避
