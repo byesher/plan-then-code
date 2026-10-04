@@ -1,0 +1,34 @@
+[33ma34f15b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{0}: reset: moving to HEAD~3
+[33mfdb64f0[m HEAD@{1}: reset: moving to HEAD~2
+[33mdd2a674[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{2}: reset: moving to HEAD~1
+[33m4bca318[m HEAD@{3}: reset: moving to HEAD~1
+[33m38ffa83[m HEAD@{4}: commit: for train_problem
+[33m4bca318[m HEAD@{5}: commit: for train_problem
+[33mdd2a674[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{6}: commit: for readme
+[33ma384010[m HEAD@{7}: commit: fix while
+[33mfdb64f0[m HEAD@{8}: commit: fix(report_data)
+[33meb7574f[m HEAD@{9}: commit: fix(many)
+[33m860ebbd[m HEAD@{10}: commit: fix eval.py
+[33ma34f15b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{11}: commit: fix2(convert)
+[33m8cfd8e1[m HEAD@{12}: commit: fix(convert)
+[33m3ce4536[m HEAD@{13}: commit: add convert.py
+[33m8877b13[m HEAD@{14}: commit: fix(downloadv2)
+[33mdef8dbd[m HEAD@{15}: commit: add downloadv2.py
+[33m2e4d05c[m HEAD@{16}: commit: fix(download)
+[33mb18512d[m HEAD@{17}: commit: add datasets_download
+[33m11fd33e[m HEAD@{18}: commit: add eval.md
+[33m8c0e751[m HEAD@{19}: commit: fix(eval): run-name is a prefix + timestamp, never overwrites
+[33m64d0916[m HEAD@{20}: commit: fix(eval): case-insensitive true/false comparison in IO eval
+[33mfc29196[m HEAD@{21}: commit: fix(eval): save all samples (sample_index suffix)
+[33m9b94a9b[m HEAD@{22}: commit: feat(eval): add sampling (temperature + num-samples + pass@k)
+[33m4e17fe4[m HEAD@{23}: commit: fix(eval): don't use device_map for 8-bit/4-bit models
+[33m17a439d[m HEAD@{24}: commit: feat(eval): add 8-bit/4-bit quantization loading for 14B
+[33m024a374[m HEAD@{25}: commit: feat(eval): add I/O versions of all 12 problems (24 total, interface+I/O)
+[33m5e91dfd[m HEAD@{26}: commit: feat(eval): add single-entry I/O mode + 2 io problems for comparison
+[33mcf81872[m HEAD@{27}: commit: add 12 eval results
+[33m7469a43[m HEAD@{28}: commit: fix(eval): clarify prompt (top-level, no wrapper class) + detect nested-in-class
+[33m9daf629[m HEAD@{29}: commit: chore: stop tracking generated eval results
+[33mfff1b1b[m HEAD@{30}: commit: feat(eval): 三层指标(接口/非标准库) + 按运行批次保存结果
+[33m6d16bd7[m HEAD@{31}: commit: fix(eval): check pytest at startup and save generated solutions
+[33m26b4e62[m HEAD@{32}: merge origin/main: Merge made by the 'ort' strategy.
+[33m3c6c97a[m HEAD@{33}: commit (initial): feat(eval): evaluation harness + 4 pilot problems, self-check 100% pass

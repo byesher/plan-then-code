@@ -14,3 +14,6 @@ eval/results/
 
 # downloaded dataset samples (large, local only)
 eval/harness/sampled_datasets/
+
+# TACO 悬崖测试集（70 题 benchmark，本地留档，不同步到公开仓库）
+eval/benchmark/problems_cliff/

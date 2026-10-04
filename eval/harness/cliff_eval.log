@@ -1,0 +1,886 @@
+nohup: ignoring input
+[2026-10-04 01:59:11] 7B 开始
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:01<00:04,  1.64s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:03<00:03,  1.64s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:04<00:01,  1.56s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:06<00:00,  1.52s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:06<00:00,  1.55s/it]
+    [p100] sample 1/5
+    [p100] sample 2/5
+    [p100] sample 3/5
+    [p100] sample 4/5
+    [p100] sample 5/5
+[p100] PASS  p100  (1 tests)  pass@k=5/5
+    [p101] sample 1/5
+    [p101] sample 2/5
+    [p101] sample 3/5
+    [p101] sample 4/5
+    [p101] sample 5/5
+[p101] PASS  p101  (1 tests)  pass@k=5/5
+    [p102] sample 1/5
+    [p102] sample 2/5
+    [p102] sample 3/5
+    [p102] sample 4/5
+    [p102] sample 5/5
+[p102] PASS  p102  (20 tests)  pass@k=5/5
+    [p103] sample 1/5
+    [p103] sample 2/5
+    [p103] sample 3/5
+    [p103] sample 4/5
+    [p103] sample 5/5
+[p103] PASS  p103  (1 tests)  pass@k=4/5
+    [p104] sample 1/5
+    [p104] sample 2/5
+    [p104] sample 3/5
+    [p104] sample 4/5
+    [p104] sample 5/5
+[p104] PASS  p104  (20 tests)  pass@k=1/5
+    [p105] sample 1/5
+    [p105] sample 2/5
+    [p105] sample 3/5
+    [p105] sample 4/5
+    [p105] sample 5/5
+[p105] LOGIC-FAIL  p105  (20 tests)  pass@k=0/5
+    [p106] sample 1/5
+    [p106] sample 2/5
+    [p106] sample 3/5
+    [p106] sample 4/5
+    [p106] sample 5/5
+[p106] LOGIC-FAIL  p106  (1 tests)  pass@k=0/5
+    [p107] sample 1/5
+    [p107] sample 2/5
+    [p107] sample 3/5
+    [p107] sample 4/5
+    [p107] sample 5/5
+[p107] LOGIC-FAIL  p107  (20 tests)  pass@k=0/5
+    [p108] sample 1/5
+    [p108] sample 2/5
+    [p108] sample 3/5
+    [p108] sample 4/5
+    [p108] sample 5/5
+[p108] LOGIC-FAIL  p108  (20 tests)  pass@k=0/5
+    [p109] sample 1/5
+    [p109] sample 2/5
+    [p109] sample 3/5
+    [p109] sample 4/5
+    [p109] sample 5/5
+[p109] PASS  p109  (20 tests)  pass@k=5/5
+    [p110] sample 1/5
+    [p110] sample 2/5
+    [p110] sample 3/5
+    [p110] sample 4/5
+    [p110] sample 5/5
+[p110] LOGIC-FAIL  p110  (1 tests)  pass@k=0/5
+    [p111] sample 1/5
+    [p111] sample 2/5
+    [p111] sample 3/5
+    [p111] sample 4/5
+    [p111] sample 5/5
+[p111] LOGIC-FAIL  p111  (20 tests)  pass@k=0/5
+    [p112] sample 1/5
+    [p112] sample 2/5
+    [p112] sample 3/5
+    [p112] sample 4/5
+    [p112] sample 5/5
+[p112] LOGIC-FAIL  p112  (20 tests)  pass@k=0/5
+    [p113] sample 1/5
+    [p113] sample 2/5
+    [p113] sample 3/5
+    [p113] sample 4/5
+    [p113] sample 5/5
+[p113] LOGIC-FAIL  p113  (20 tests)  pass@k=0/5
+    [p114] sample 1/5
+    [p114] sample 2/5
+    [p114] sample 3/5
+    [p114] sample 4/5
+    [p114] sample 5/5
+[p114] LOGIC-FAIL  p114  (1 tests)  pass@k=0/5
+    [p115] sample 1/5
+    [p115] sample 2/5
+    [p115] sample 3/5
+    [p115] sample 4/5
+    [p115] sample 5/5
+[p115] LOGIC-FAIL  p115  (1 tests)  pass@k=0/5
+    [p116] sample 1/5
+    [p116] sample 2/5
+    [p116] sample 3/5
+    [p116] sample 4/5
+    [p116] sample 5/5
+[p116] PASS  p116  (2 tests)  pass@k=4/5
+    [p117] sample 1/5
+    [p117] sample 2/5
+    [p117] sample 3/5
+    [p117] sample 4/5
+    [p117] sample 5/5
+[p117] LOGIC-FAIL  p117  (20 tests)  pass@k=0/5
+    [p118] sample 1/5
+    [p118] sample 2/5
+    [p118] sample 3/5
+    [p118] sample 4/5
+    [p118] sample 5/5
+[p118] LOGIC-FAIL  p118  (20 tests)  pass@k=0/5
+    [p119] sample 1/5
+    [p119] sample 2/5
+    [p119] sample 3/5
+    [p119] sample 4/5
+    [p119] sample 5/5
+[p119] LOGIC-FAIL  p119  (20 tests)  pass@k=0/5
+    [p120] sample 1/5
+    [p120] sample 2/5
+    [p120] sample 3/5
+    [p120] sample 4/5
+    [p120] sample 5/5
+[p120] LOGIC-FAIL  p120  (20 tests)  pass@k=0/5
+    [p121] sample 1/5
+    [p121] sample 2/5
+    [p121] sample 3/5
+    [p121] sample 4/5
+    [p121] sample 5/5
+[p121] PASS  p121  (1 tests)  pass@k=4/5
+    [p122] sample 1/5
+    [p122] sample 2/5
+    [p122] sample 3/5
+    [p122] sample 4/5
+    [p122] sample 5/5
+[p122] LOGIC-FAIL  p122  (20 tests)  pass@k=0/5
+    [p123] sample 1/5
+    [p123] sample 2/5
+    [p123] sample 3/5
+    [p123] sample 4/5
+    [p123] sample 5/5
+[p123] LOGIC-FAIL  p123  (1 tests)  pass@k=0/5
+    [p124] sample 1/5
+    [p124] sample 2/5
+    [p124] sample 3/5
+    [p124] sample 4/5
+    [p124] sample 5/5
+[p124] PASS  p124  (1 tests)  pass@k=3/5
+    [p125] sample 1/5
+    [p125] sample 2/5
+    [p125] sample 3/5
+    [p125] sample 4/5
+    [p125] sample 5/5
+[p125] LOGIC-FAIL  p125  (20 tests)  pass@k=0/5
+    [p126] sample 1/5
+    [p126] sample 2/5
+    [p126] sample 3/5
+    [p126] sample 4/5
+    [p126] sample 5/5
+[p126] LOGIC-FAIL  p126  (20 tests)  pass@k=0/5
+    [p127] sample 1/5
+    [p127] sample 2/5
+    [p127] sample 3/5
+    [p127] sample 4/5
+    [p127] sample 5/5
+[p127] LOGIC-FAIL  p127  (20 tests)  pass@k=0/5
+    [p128] sample 1/5
+    [p128] sample 2/5
+    [p128] sample 3/5
+    [p128] sample 4/5
+    [p128] sample 5/5
+[p128] PASS  p128  (1 tests)  pass@k=2/5
+    [p129] sample 1/5
+    [p129] sample 2/5
+    [p129] sample 3/5
+    [p129] sample 4/5
+    [p129] sample 5/5
+[p129] LOGIC-FAIL  p129  (2 tests)  pass@k=0/5
+    [p130] sample 1/5
+    [p130] sample 2/5
+    [p130] sample 3/5
+    [p130] sample 4/5
+    [p130] sample 5/5
+[p130] LOGIC-FAIL  p130  (20 tests)  pass@k=0/5
+    [p131] sample 1/5
+    [p131] sample 2/5
+    [p131] sample 3/5
+    [p131] sample 4/5
+    [p131] sample 5/5
+[p131] LOGIC-FAIL  p131  (20 tests)  pass@k=0/5
+    [p132] sample 1/5
+    [p132] sample 2/5
+    [p132] sample 3/5
+    [p132] sample 4/5
+    [p132] sample 5/5
+[p132] LOGIC-FAIL  Dwango Programming Contest V - Square Rotation  (20 tests)  pass@k=0/5
+    [p133] sample 1/5
+    [p133] sample 2/5
+    [p133] sample 3/5
+    [p133] sample 4/5
+    [p133] sample 5/5
+[p133] LOGIC-FAIL  p133  (20 tests)  pass@k=0/5
+    [p134] sample 1/5
+    [p134] sample 2/5
+    [p134] sample 3/5
+    [p134] sample 4/5
+    [p134] sample 5/5
+[p134] LOGIC-FAIL  p134  (20 tests)  pass@k=0/5
+    [p135] sample 1/5
+    [p135] sample 2/5
+    [p135] sample 3/5
+    [p135] sample 4/5
+    [p135] sample 5/5
+[p135] LOGIC-FAIL  AtCoder Grand Contest 026 - Synchronized Subsequence  (20 tests)  pass@k=0/5
+    [p136] sample 1/5
+    [p136] sample 2/5
+    [p136] sample 3/5
+    [p136] sample 4/5
+    [p136] sample 5/5
+[p136] LOGIC-FAIL  p136  (20 tests)  pass@k=0/5
+    [p137] sample 1/5
+    [p137] sample 2/5
+    [p137] sample 3/5
+    [p137] sample 4/5
+    [p137] sample 5/5
+[p137] LOGIC-FAIL  p137  (20 tests)  pass@k=0/5
+    [p138] sample 1/5
+    [p138] sample 2/5
+    [p138] sample 3/5
+    [p138] sample 4/5
+    [p138] sample 5/5
+[p138] LOGIC-FAIL  p138  (20 tests)  pass@k=0/5
+    [p139] sample 1/5
+    [p139] sample 2/5
+    [p139] sample 3/5
+    [p139] sample 4/5
+    [p139] sample 5/5
+[p139] LOGIC-FAIL  p139  (1 tests)  pass@k=0/5
+    [p140] sample 1/5
+    [p140] sample 2/5
+    [p140] sample 3/5
+    [p140] sample 4/5
+    [p140] sample 5/5
+[p140] LOGIC-FAIL  p140  (1 tests)  pass@k=0/5
+    [p141] sample 1/5
+    [p141] sample 2/5
+    [p141] sample 3/5
+    [p141] sample 4/5
+    [p141] sample 5/5
+[p141] LOGIC-FAIL  Introduction to Heuristics Contest - Incremental Scoring  (20 tests)  pass@k=0/5
+    [p142] sample 1/5
+    [p142] sample 2/5
+    [p142] sample 3/5
+    [p142] sample 4/5
+    [p142] sample 5/5
+[p142] LOGIC-FAIL  p142  (20 tests)  pass@k=0/5
+    [p143] sample 1/5
+    [p143] sample 2/5
+    [p143] sample 3/5
+    [p143] sample 4/5
+    [p143] sample 5/5
+[p143] LOGIC-FAIL  p143  (20 tests)  pass@k=0/5
+    [p144] sample 1/5
+    [p144] sample 2/5
+    [p144] sample 3/5
+    [p144] sample 4/5
+    [p144] sample 5/5
+[p144] LOGIC-FAIL  p144  (1 tests)  pass@k=0/5
+    [p145] sample 1/5
+    [p145] sample 2/5
+    [p145] sample 3/5
+    [p145] sample 4/5
+    [p145] sample 5/5
+[p145] LOGIC-FAIL  p145  (20 tests)  pass@k=0/5
+    [p146] sample 1/5
+    [p146] sample 2/5
+    [p146] sample 3/5
+    [p146] sample 4/5
+    [p146] sample 5/5
+[p146] LOGIC-FAIL  p146  (20 tests)  pass@k=0/5
+    [p147] sample 1/5
+    [p147] sample 2/5
+    [p147] sample 3/5
+    [p147] sample 4/5
+    [p147] sample 5/5
+[p147] LOGIC-FAIL  p147  (20 tests)  pass@k=0/5
+    [p148] sample 1/5
+    [p148] sample 2/5
+    [p148] sample 3/5
+    [p148] sample 4/5
+    [p148] sample 5/5
+[p148] LOGIC-FAIL  p148  (20 tests)  pass@k=0/5
+    [p149] sample 1/5
+    [p149] sample 2/5
+    [p149] sample 3/5
+    [p149] sample 4/5
+    [p149] sample 5/5
+[p149] LOGIC-FAIL  AtCoder Regular Contest 077 - guruguru  (20 tests)  pass@k=0/5
+    [p150] sample 1/5
+    [p150] sample 2/5
+    [p150] sample 3/5
+    [p150] sample 4/5
+    [p150] sample 5/5
+[p150] PASS  p150  (1 tests)  pass@k=4/5
+    [p151] sample 1/5
+    [p151] sample 2/5
+    [p151] sample 3/5
+    [p151] sample 4/5
+    [p151] sample 5/5
+[p151] PASS  p151  (1 tests)  pass@k=1/5
+    [p152] sample 1/5
+    [p152] sample 2/5
+    [p152] sample 3/5
+    [p152] sample 4/5
+    [p152] sample 5/5
+[p152] LOGIC-FAIL  p152  (20 tests)  pass@k=0/5
+    [p153] sample 1/5
+    [p153] sample 2/5
+    [p153] sample 3/5
+    [p153] sample 4/5
+    [p153] sample 5/5
+[p153] LOGIC-FAIL  M-SOLUTIONS Programming Contest 2020 - Air Safety  (20 tests)  pass@k=0/5
+    [p154] sample 1/5
+    [p154] sample 2/5
+    [p154] sample 3/5
+    [p154] sample 4/5
+    [p154] sample 5/5
+[p154] LOGIC-FAIL  p154  (20 tests)  pass@k=0/5
+    [p155] sample 1/5
+    [p155] sample 2/5
+    [p155] sample 3/5
+    [p155] sample 4/5
+    [p155] sample 5/5
+[p155] LOGIC-FAIL  p155  (20 tests)  pass@k=0/5
+    [p156] sample 1/5
+    [p156] sample 2/5
+    [p156] sample 3/5
+    [p156] sample 4/5
+    [p156] sample 5/5
+[p156] LOGIC-FAIL  p156  (20 tests)  pass@k=0/5
+    [p157] sample 1/5
+    [p157] sample 2/5
+    [p157] sample 3/5
+    [p157] sample 4/5
+    [p157] sample 5/5
+[p157] LOGIC-FAIL  p157  (1 tests)  pass@k=0/5
+    [p158] sample 1/5
+    [p158] sample 2/5
+    [p158] sample 3/5
+    [p158] sample 4/5
+    [p158] sample 5/5
+[p158] LOGIC-FAIL  p158  (20 tests)  pass@k=0/5
+    [p159] sample 1/5
+    [p159] sample 2/5
+    [p159] sample 3/5
+    [p159] sample 4/5
+    [p159] sample 5/5
+[p159] LOGIC-FAIL  p159  (20 tests)  pass@k=0/5
+    [p160] sample 1/5
+    [p160] sample 2/5
+    [p160] sample 3/5
+    [p160] sample 4/5
+    [p160] sample 5/5
+[p160] LOGIC-FAIL  p160  (20 tests)  pass@k=0/5
+    [p161] sample 1/5
+    [p161] sample 2/5
+    [p161] sample 3/5
+    [p161] sample 4/5
+    [p161] sample 5/5
+[p161] LOGIC-FAIL  AtCoder Library Practice Contest - Number of Substrings  (20 tests)  pass@k=0/5
+    [p162] sample 1/5
+    [p162] sample 2/5
+    [p162] sample 3/5
+    [p162] sample 4/5
+    [p162] sample 5/5
+[p162] LOGIC-FAIL  p162  (1 tests)  pass@k=0/5
+    [p163] sample 1/5
+    [p163] sample 2/5
+    [p163] sample 3/5
+    [p163] sample 4/5
+    [p163] sample 5/5
+[p163] LOGIC-FAIL  p163  (1 tests)  pass@k=0/5
+    [p164] sample 1/5
+    [p164] sample 2/5
+    [p164] sample 3/5
+    [p164] sample 4/5
+    [p164] sample 5/5
+[p164] LOGIC-FAIL  p164  (20 tests)  pass@k=0/5
+    [p165] sample 1/5
+    [p165] sample 2/5
+    [p165] sample 3/5
+    [p165] sample 4/5
+    [p165] sample 5/5
+[p165] PASS  p165  (1 tests)  pass@k=1/5
+    [p166] sample 1/5
+    [p166] sample 2/5
+    [p166] sample 3/5
+    [p166] sample 4/5
+    [p166] sample 5/5
+[p166] LOGIC-FAIL  p166  (1 tests)  pass@k=0/5
+    [p167] sample 1/5
+    [p167] sample 2/5
+    [p167] sample 3/5
+    [p167] sample 4/5
+    [p167] sample 5/5
+[p167] LOGIC-FAIL  p167  (1 tests)  pass@k=0/5
+    [p168] sample 1/5
+    [p168] sample 2/5
+    [p168] sample 3/5
+    [p168] sample 4/5
+    [p168] sample 5/5
+[p168] LOGIC-FAIL  p168  (20 tests)  pass@k=0/5
+    [p169] sample 1/5
+    [p169] sample 2/5
+    [p169] sample 3/5
+    [p169] sample 4/5
+    [p169] sample 5/5
+[p169] LOGIC-FAIL  p169  (4 tests)  pass@k=0/5
+
+=== aggregate ===
+{
+  "total": 70,
+  "compiled": 70,
+  "passed": 13,
+  "compile_rate": 1.0,
+  "test_pass_rate": 0.18571428571428572,
+  "test_pass_rate_among_compiled": 0.18571428571428572,
+  "interface_ok": 70,
+  "interface_ok_rate": 1.0,
+  "non_stdlib_count": 0,
+  "non_stdlib_rate": 0.0,
+  "test_pass_rate_among_interface_ok": 0.18571428571428572,
+  "n_samples": 5,
+  "pass_at_1_avg": 0.12571428571428572,
+  "case_pass_rate": 0.13483870967741934
+}
+
+report saved to ../results/report_7B_cliff_k5_20261004_015912.json
+[2026-10-04 02:51:17] 14B 开始
+Loading checkpoint shards:   0%|          | 0/8 [00:00<?, ?it/s]Loading checkpoint shards:  12%|█▎        | 1/8 [00:11<01:19, 11.31s/it]Loading checkpoint shards:  25%|██▌       | 2/8 [00:16<00:45,  7.66s/it]Loading checkpoint shards:  38%|███▊      | 3/8 [00:19<00:27,  5.45s/it]Loading checkpoint shards:  50%|█████     | 4/8 [00:21<00:17,  4.36s/it]Loading checkpoint shards:  62%|██████▎   | 5/8 [00:24<00:10,  3.56s/it]Loading checkpoint shards:  75%|███████▌  | 6/8 [00:26<00:06,  3.04s/it]Loading checkpoint shards:  88%|████████▊ | 7/8 [00:37<00:05,  5.82s/it]Loading checkpoint shards: 100%|██████████| 8/8 [00:38<00:00,  4.25s/it]Loading checkpoint shards: 100%|██████████| 8/8 [00:38<00:00,  4.81s/it]
+    [p100] sample 1/5
+    [p100] sample 2/5
+    [p100] sample 3/5
+    [p100] sample 4/5
+    [p100] sample 5/5
+[p100] PASS  p100  (1 tests)  pass@k=5/5
+    [p101] sample 1/5
+    [p101] sample 2/5
+    [p101] sample 3/5
+    [p101] sample 4/5
+    [p101] sample 5/5
+[p101] PASS  p101  (1 tests)  pass@k=5/5
+    [p102] sample 1/5
+    [p102] sample 2/5
+    [p102] sample 3/5
+    [p102] sample 4/5
+    [p102] sample 5/5
+[p102] PASS  p102  (20 tests)  pass@k=5/5
+    [p103] sample 1/5
+    [p103] sample 2/5
+    [p103] sample 3/5
+    [p103] sample 4/5
+    [p103] sample 5/5
+[p103] PASS  p103  (1 tests)  pass@k=4/5
+    [p104] sample 1/5
+    [p104] sample 2/5
+    [p104] sample 3/5
+    [p104] sample 4/5
+    [p104] sample 5/5
+[p104] LOGIC-FAIL  p104  (20 tests)  pass@k=0/5
+    [p105] sample 1/5
+    [p105] sample 2/5
+    [p105] sample 3/5
+    [p105] sample 4/5
+    [p105] sample 5/5
+[p105] LOGIC-FAIL  p105  (20 tests)  pass@k=0/5
+    [p106] sample 1/5
+    [p106] sample 2/5
+    [p106] sample 3/5
+    [p106] sample 4/5
+    [p106] sample 5/5
+[p106] PASS  p106  (1 tests)  pass@k=1/5
+    [p107] sample 1/5
+    [p107] sample 2/5
+    [p107] sample 3/5
+    [p107] sample 4/5
+    [p107] sample 5/5
+[p107] LOGIC-FAIL  p107  (20 tests)  pass@k=0/5
+    [p108] sample 1/5
+    [p108] sample 2/5
+    [p108] sample 3/5
+    [p108] sample 4/5
+    [p108] sample 5/5
+[p108] PASS  p108  (20 tests)  pass@k=2/5
+    [p109] sample 1/5
+    [p109] sample 2/5
+    [p109] sample 3/5
+    [p109] sample 4/5
+    [p109] sample 5/5
+[p109] PASS  p109  (20 tests)  pass@k=5/5
+    [p110] sample 1/5
+    [p110] sample 2/5
+    [p110] sample 3/5
+    [p110] sample 4/5
+    [p110] sample 5/5
+[p110] PASS  p110  (1 tests)  pass@k=5/5
+    [p111] sample 1/5
+    [p111] sample 2/5
+    [p111] sample 3/5
+    [p111] sample 4/5
+    [p111] sample 5/5
+[p111] LOGIC-FAIL  p111  (20 tests)  pass@k=0/5
+    [p112] sample 1/5
+    [p112] sample 2/5
+    [p112] sample 3/5
+    [p112] sample 4/5
+    [p112] sample 5/5
+[p112] PASS  p112  (20 tests)  pass@k=1/5
+    [p113] sample 1/5
+    [p113] sample 2/5
+    [p113] sample 3/5
+    [p113] sample 4/5
+    [p113] sample 5/5
+[p113] LOGIC-FAIL  p113  (20 tests)  pass@k=0/5
+    [p114] sample 1/5
+    [p114] sample 2/5
+    [p114] sample 3/5
+    [p114] sample 4/5
+    [p114] sample 5/5
+[p114] LOGIC-FAIL  p114  (1 tests)  pass@k=0/5
+    [p115] sample 1/5
+    [p115] sample 2/5
+    [p115] sample 3/5
+    [p115] sample 4/5
+    [p115] sample 5/5
+[p115] LOGIC-FAIL  p115  (1 tests)  pass@k=0/5
+    [p116] sample 1/5
+    [p116] sample 2/5
+    [p116] sample 3/5
+    [p116] sample 4/5
+    [p116] sample 5/5
+[p116] LOGIC-FAIL  p116  (2 tests)  pass@k=0/5
+    [p117] sample 1/5
+    [p117] sample 2/5
+    [p117] sample 3/5
+    [p117] sample 4/5
+    [p117] sample 5/5
+[p117] LOGIC-FAIL  p117  (20 tests)  pass@k=0/5
+    [p118] sample 1/5
+    [p118] sample 2/5
+    [p118] sample 3/5
+    [p118] sample 4/5
+    [p118] sample 5/5
+[p118] LOGIC-FAIL  p118  (20 tests)  pass@k=0/5
+    [p119] sample 1/5
+    [p119] sample 2/5
+    [p119] sample 3/5
+    [p119] sample 4/5
+    [p119] sample 5/5
+[p119] LOGIC-FAIL  p119  (20 tests)  pass@k=0/5
+    [p120] sample 1/5
+    [p120] sample 2/5
+    [p120] sample 3/5
+    [p120] sample 4/5
+    [p120] sample 5/5
+[p120] LOGIC-FAIL  p120  (20 tests)  pass@k=0/5
+    [p121] sample 1/5
+    [p121] sample 2/5
+    [p121] sample 3/5
+    [p121] sample 4/5
+    [p121] sample 5/5
+[p121] PASS  p121  (1 tests)  pass@k=3/5
+    [p122] sample 1/5
+    [p122] sample 2/5
+    [p122] sample 3/5
+    [p122] sample 4/5
+    [p122] sample 5/5
+[p122] LOGIC-FAIL  p122  (20 tests)  pass@k=0/5
+    [p123] sample 1/5
+    [p123] sample 2/5
+    [p123] sample 3/5
+    [p123] sample 4/5
+    [p123] sample 5/5
+[p123] LOGIC-FAIL  p123  (1 tests)  pass@k=0/5
+    [p124] sample 1/5
+    [p124] sample 2/5
+    [p124] sample 3/5
+    [p124] sample 4/5
+    [p124] sample 5/5
+[p124] PASS  p124  (1 tests)  pass@k=1/5
+    [p125] sample 1/5
+    [p125] sample 2/5
+    [p125] sample 3/5
+    [p125] sample 4/5
+    [p125] sample 5/5
+[p125] LOGIC-FAIL  p125  (20 tests)  pass@k=0/5
+    [p126] sample 1/5
+    [p126] sample 2/5
+    [p126] sample 3/5
+    [p126] sample 4/5
+    [p126] sample 5/5
+[p126] LOGIC-FAIL  p126  (20 tests)  pass@k=0/5
+    [p127] sample 1/5
+    [p127] sample 2/5
+    [p127] sample 3/5
+    [p127] sample 4/5
+    [p127] sample 5/5
+[p127] LOGIC-FAIL  p127  (20 tests)  pass@k=0/5
+    [p128] sample 1/5
+    [p128] sample 2/5
+    [p128] sample 3/5
+    [p128] sample 4/5
+    [p128] sample 5/5
+[p128] PASS  p128  (1 tests)  pass@k=2/5
+    [p129] sample 1/5
+    [p129] sample 2/5
+    [p129] sample 3/5
+    [p129] sample 4/5
+    [p129] sample 5/5
+[p129] PASS  p129  (2 tests)  pass@k=1/5
+    [p130] sample 1/5
+    [p130] sample 2/5
+    [p130] sample 3/5
+    [p130] sample 4/5
+    [p130] sample 5/5
+[p130] PASS  p130  (20 tests)  pass@k=1/5
+    [p131] sample 1/5
+    [p131] sample 2/5
+    [p131] sample 3/5
+    [p131] sample 4/5
+    [p131] sample 5/5
+[p131] LOGIC-FAIL  p131  (20 tests)  pass@k=0/5
+    [p132] sample 1/5
+    [p132] sample 2/5
+    [p132] sample 3/5
+    [p132] sample 4/5
+    [p132] sample 5/5
+[p132] LOGIC-FAIL  Dwango Programming Contest V - Square Rotation  (20 tests)  pass@k=0/5
+    [p133] sample 1/5
+    [p133] sample 2/5
+    [p133] sample 3/5
+    [p133] sample 4/5
+    [p133] sample 5/5
+[p133] COMPILE-FAIL  p133  (20 tests)  pass@k=0/5
+    [p134] sample 1/5
+    [p134] sample 2/5
+    [p134] sample 3/5
+    [p134] sample 4/5
+    [p134] sample 5/5
+[p134] LOGIC-FAIL  p134  (20 tests)  pass@k=0/5
+    [p135] sample 1/5
+    [p135] sample 2/5
+    [p135] sample 3/5
+    [p135] sample 4/5
+    [p135] sample 5/5
+[p135] LOGIC-FAIL  AtCoder Grand Contest 026 - Synchronized Subsequence  (20 tests)  pass@k=0/5
+    [p136] sample 1/5
+    [p136] sample 2/5
+    [p136] sample 3/5
+    [p136] sample 4/5
+    [p136] sample 5/5
+[p136] LOGIC-FAIL  p136  (20 tests)  pass@k=0/5
+    [p137] sample 1/5
+    [p137] sample 2/5
+    [p137] sample 3/5
+    [p137] sample 4/5
+    [p137] sample 5/5
+[p137] LOGIC-FAIL  p137  (20 tests)  pass@k=0/5
+    [p138] sample 1/5
+    [p138] sample 2/5
+    [p138] sample 3/5
+    [p138] sample 4/5
+    [p138] sample 5/5
+[p138] LOGIC-FAIL  p138  (20 tests)  pass@k=0/5
+    [p139] sample 1/5
+    [p139] sample 2/5
+    [p139] sample 3/5
+    [p139] sample 4/5
+    [p139] sample 5/5
+[p139] LOGIC-FAIL  p139  (1 tests)  pass@k=0/5
+    [p140] sample 1/5
+    [p140] sample 2/5
+    [p140] sample 3/5
+    [p140] sample 4/5
+    [p140] sample 5/5
+[p140] LOGIC-FAIL  p140  (1 tests)  pass@k=0/5
+    [p141] sample 1/5
+    [p141] sample 2/5
+    [p141] sample 3/5
+    [p141] sample 4/5
+    [p141] sample 5/5
+[p141] PASS  Introduction to Heuristics Contest - Incremental Scoring  (20 tests)  pass@k=1/5
+    [p142] sample 1/5
+    [p142] sample 2/5
+    [p142] sample 3/5
+    [p142] sample 4/5
+    [p142] sample 5/5
+[p142] LOGIC-FAIL  p142  (20 tests)  pass@k=0/5
+    [p143] sample 1/5
+    [p143] sample 2/5
+    [p143] sample 3/5
+    [p143] sample 4/5
+    [p143] sample 5/5
+[p143] LOGIC-FAIL  p143  (20 tests)  pass@k=0/5
+    [p144] sample 1/5
+    [p144] sample 2/5
+    [p144] sample 3/5
+    [p144] sample 4/5
+    [p144] sample 5/5
+[p144] LOGIC-FAIL  p144  (1 tests)  pass@k=0/5
+    [p145] sample 1/5
+    [p145] sample 2/5
+    [p145] sample 3/5
+    [p145] sample 4/5
+    [p145] sample 5/5
+[p145] PASS  p145  (20 tests)  pass@k=2/5
+    [p146] sample 1/5
+    [p146] sample 2/5
+    [p146] sample 3/5
+    [p146] sample 4/5
+    [p146] sample 5/5
+[p146] LOGIC-FAIL  p146  (20 tests)  pass@k=0/5
+    [p147] sample 1/5
+    [p147] sample 2/5
+    [p147] sample 3/5
+    [p147] sample 4/5
+    [p147] sample 5/5
+[p147] COMPILE-FAIL  p147  (20 tests)  pass@k=0/5
+    [p148] sample 1/5
+    [p148] sample 2/5
+    [p148] sample 3/5
+    [p148] sample 4/5
+    [p148] sample 5/5
+[p148] LOGIC-FAIL  p148  (20 tests)  pass@k=0/5
+    [p149] sample 1/5
+    [p149] sample 2/5
+    [p149] sample 3/5
+    [p149] sample 4/5
+    [p149] sample 5/5
+[p149] LOGIC-FAIL  AtCoder Regular Contest 077 - guruguru  (20 tests)  pass@k=0/5
+    [p150] sample 1/5
+    [p150] sample 2/5
+    [p150] sample 3/5
+    [p150] sample 4/5
+    [p150] sample 5/5
+[p150] PASS  p150  (1 tests)  pass@k=5/5
+    [p151] sample 1/5
+    [p151] sample 2/5
+    [p151] sample 3/5
+    [p151] sample 4/5
+    [p151] sample 5/5
+[p151] PASS  p151  (1 tests)  pass@k=1/5
+    [p152] sample 1/5
+    [p152] sample 2/5
+    [p152] sample 3/5
+    [p152] sample 4/5
+    [p152] sample 5/5
+[p152] LOGIC-FAIL  p152  (20 tests)  pass@k=0/5
+    [p153] sample 1/5
+    [p153] sample 2/5
+    [p153] sample 3/5
+    [p153] sample 4/5
+    [p153] sample 5/5
+[p153] LOGIC-FAIL  M-SOLUTIONS Programming Contest 2020 - Air Safety  (20 tests)  pass@k=0/5
+    [p154] sample 1/5
+    [p154] sample 2/5
+    [p154] sample 3/5
+    [p154] sample 4/5
+    [p154] sample 5/5
+[p154] PASS  p154  (20 tests)  pass@k=1/5
+    [p155] sample 1/5
+    [p155] sample 2/5
+    [p155] sample 3/5
+    [p155] sample 4/5
+    [p155] sample 5/5
+[p155] LOGIC-FAIL  p155  (20 tests)  pass@k=0/5
+    [p156] sample 1/5
+    [p156] sample 2/5
+    [p156] sample 3/5
+    [p156] sample 4/5
+    [p156] sample 5/5
+[p156] LOGIC-FAIL  p156  (20 tests)  pass@k=0/5
+    [p157] sample 1/5
+    [p157] sample 2/5
+    [p157] sample 3/5
+    [p157] sample 4/5
+    [p157] sample 5/5
+[p157] PASS  p157  (1 tests)  pass@k=1/5
+    [p158] sample 1/5
+    [p158] sample 2/5
+    [p158] sample 3/5
+    [p158] sample 4/5
+    [p158] sample 5/5
+[p158] LOGIC-FAIL  p158  (20 tests)  pass@k=0/5
+    [p159] sample 1/5
+    [p159] sample 2/5
+    [p159] sample 3/5
+    [p159] sample 4/5
+    [p159] sample 5/5
+[p159] LOGIC-FAIL  p159  (20 tests)  pass@k=0/5
+    [p160] sample 1/5
+    [p160] sample 2/5
+    [p160] sample 3/5
+    [p160] sample 4/5
+    [p160] sample 5/5
+[p160] LOGIC-FAIL  p160  (20 tests)  pass@k=0/5
+    [p161] sample 1/5
+    [p161] sample 2/5
+    [p161] sample 3/5
+    [p161] sample 4/5
+    [p161] sample 5/5
+[p161] PASS  AtCoder Library Practice Contest - Number of Substrings  (20 tests)  pass@k=2/5
+    [p162] sample 1/5
+    [p162] sample 2/5
+    [p162] sample 3/5
+    [p162] sample 4/5
+    [p162] sample 5/5
+[p162] LOGIC-FAIL  p162  (1 tests)  pass@k=0/5
+    [p163] sample 1/5
+    [p163] sample 2/5
+    [p163] sample 3/5
+    [p163] sample 4/5
+    [p163] sample 5/5
+[p163] PASS  p163  (1 tests)  pass@k=1/5
+    [p164] sample 1/5
+    [p164] sample 2/5
+    [p164] sample 3/5
+    [p164] sample 4/5
+    [p164] sample 5/5
+[p164] PASS  p164  (20 tests)  pass@k=1/5
+    [p165] sample 1/5
+    [p165] sample 2/5
+    [p165] sample 3/5
+    [p165] sample 4/5
+    [p165] sample 5/5
+[p165] PASS  p165  (1 tests)  pass@k=1/5
+    [p166] sample 1/5
+    [p166] sample 2/5
+    [p166] sample 3/5
+    [p166] sample 4/5
+    [p166] sample 5/5
+[p166] PASS  p166  (1 tests)  pass@k=2/5
+    [p167] sample 1/5
+    [p167] sample 2/5
+    [p167] sample 3/5
+    [p167] sample 4/5
+    [p167] sample 5/5
+[p167] LOGIC-FAIL  p167  (1 tests)  pass@k=0/5
+    [p168] sample 1/5
+    [p168] sample 2/5
+    [p168] sample 3/5
+    [p168] sample 4/5
+    [p168] sample 5/5
+[p168] LOGIC-FAIL  p168  (20 tests)  pass@k=0/5
+    [p169] sample 1/5
+    [p169] sample 2/5
+    [p169] sample 3/5
+    [p169] sample 4/5
+    [p169] sample 5/5
+[p169] PASS  p169  (4 tests)  pass@k=1/5
+
+=== aggregate ===
+{
+  "total": 70,
+  "compiled": 66,
+  "passed": 26,
+  "compile_rate": 0.9428571428571428,
+  "test_pass_rate": 0.37142857142857144,
+  "test_pass_rate_among_compiled": 0.3939393939393939,
+  "interface_ok": 70,
+  "interface_ok_rate": 1.0,
+  "non_stdlib_count": 0,
+  "non_stdlib_rate": 0.0,
+  "test_pass_rate_among_interface_ok": 0.37142857142857144,
+  "n_samples": 5,
+  "pass_at_1_avg": 0.17142857142857143,
+  "case_pass_rate": 0.21591397849462365
+}
+
+report saved to ../results/report_14B_cliff_k5_20261004_025118.json
+[2026-10-04 04:36:19] 完成，关机
