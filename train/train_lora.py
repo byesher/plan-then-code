@@ -153,7 +153,8 @@ def main():
         bf16=True,
         logging_steps=LOGGING_STEPS,
         save_strategy=SAVE_STRATEGY,
-        save_total_limit=2,
+        save_total_limit=1,
+        save_only_model=True,   # 不存 optimizer/scheduler（那个 ~250MB 的 optimizer.pt 是写满磁盘的元凶；LoRA 只需最终 adapter）
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
         report_to="none",
