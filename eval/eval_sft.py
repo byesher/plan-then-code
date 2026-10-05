@@ -163,7 +163,7 @@ def run_tests_detailed(code, tests):
 def status_of(sample):
     if sample["test_pass"]:
         return "PASS"
-    if not sample["code"].strip():
+    if not sample["code_excerpt"].strip():
         return "EMPTY"
     for c in sample["cases"]:
         if c["error"] == "timeout":
