@@ -1,0 +1,9 @@
+{
+  "raw_n": 300,
+  "success": 300,
+  "fail": 0,
+  "model": "qwen-max",
+  "pseudo_lang": "中文",
+  "elapsed_sec": 317.7,
+  "out": "/root/autodl-tmp/plan-then-code/data/taco_train/train_sft.jsonl"
+}

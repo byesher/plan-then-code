@@ -1,0 +1,31 @@
+{
+  "seed": 42,
+  "train_n": 300,
+  "dev_n": 50,
+  "test_set_excluded_files": 70,
+  "filter_stats": {
+    "interactive": 119,
+    "empty": 5878,
+    "py2": 28,
+    "no_tests": 574,
+    "overlap": 72,
+    "diff_filter": 0
+  },
+  "train_difficulty": {
+    "HARD": 38,
+    "MEDIUM_HARD": 47,
+    "UNKNOWN_DIFFICULTY": 66,
+    "EASY": 110,
+    "VERY_HARD": 21,
+    "MEDIUM": 18
+  },
+  "dev_difficulty": {
+    "EASY": 14,
+    "MEDIUM_HARD": 11,
+    "UNKNOWN_DIFFICULTY": 10,
+    "MEDIUM": 6,
+    "HARD": 7,
+    "VERY_HARD": 2
+  },
+  "note": "训练/开发集已按题目原文排除 70 题测试集，零重叠。"
+}

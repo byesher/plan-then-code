@@ -248,17 +248,20 @@ def main():
 
     tok, model = load_model()
     summaries = {}
+    all_results = {}
 
     if MODE in ("all", "baseline"):
         print("跑 baseline（直接写代码）...")
         res = evaluate_mode(tok, model, items, "baseline", run_dir / "baseline")
         summaries["baseline"] = summarize(res)
+        all_results["baseline"] = res
         print(f"  baseline: pass@1={summaries['baseline']['pass@1']:.1%}, case_pass={summaries['baseline']['case_pass']:.1%}\n")
 
     if MODE in ("all", "prompt"):
         print("跑 prompt（base + 先写伪代码）...")
         res = evaluate_mode(tok, model, items, "prompt", run_dir / "prompt")
         summaries["prompt"] = summarize(res)
+        all_results["prompt"] = res
         print(f"  prompt:   pass@1={summaries['prompt']['pass@1']:.1%}, case_pass={summaries['prompt']['case_pass']:.1%}\n")
 
     if MODE in ("all", "sft") and ADAPTER_PATH:
@@ -268,6 +271,7 @@ def main():
         _, model2 = load_model(ADAPTER_PATH)
         res = evaluate_mode(tok, model2, items, "sft", run_dir / "sft")
         summaries["sft"] = summarize(res)
+        all_results["sft"] = res
         print(f"  sft:      pass@1={summaries['sft']['pass@1']:.1%}, case_pass={summaries['sft']['case_pass']:.1%}\n")
     elif MODE == "sft" and not ADAPTER_PATH:
         print("⚠️ MODE=sft 但没设 ADAPTER_PATH，跳过 sft 组。")
@@ -290,7 +294,8 @@ def main():
             "max_new_tokens": MAX_NEW_TOKENS, "dev_n": len(items),
         },
         "summary": summaries,
-        "note": "每个 mode/<题目>/ 下有 raw_i.txt（原始输出）+ code_i.py（抽出代码）；report 里 samples[].cases 是逐样例实跑结果。",
+        "results": all_results,  # 逐题逐样本的完整结果（含 cases[] 逐样例实跑）
+        "note": "results[mode][i] 是每题明细：samples[].cases[] 记录每个测试样例的 passed/error/actual/expected/stderr；raw/code 全文在 <mode>/<题目>/raw_0.txt 和 code_0.py。",
     }
     report_path = run_dir / "report.json"
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
