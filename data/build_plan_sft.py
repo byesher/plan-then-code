@@ -146,25 +146,29 @@ def ref_passes(ref_code, tests):
 
 
 def run_code(code, tests):
-    """跑生成的代码，返回 (通过样例数, 总样例数)。首个失败即停（快）。"""
+    """跑生成的代码，返回 (通过样例数, 总样例数, 失败原因)。首个失败即停（快）。"""
     td = tempfile.mkdtemp(prefix="plan_run_")
     try:
         with open(os.path.join(td, "solution.py"), "w", encoding="utf-8") as f:
             f.write(code)
         n_pass = 0
         total = len(tests[:CLOSED_LOOP_TESTS])
-        for case in tests[:CLOSED_LOOP_TESTS]:
+        first_err = ""
+        for i, case in enumerate(tests[:CLOSED_LOOP_TESTS]):
             try:
                 r = subprocess.run([sys.executable, "-B", "solution.py"], cwd=td,
                                    input=case["input"], capture_output=True, text=True, timeout=TEST_TIMEOUT)
             except subprocess.TimeoutExpired:
+                first_err = f"case{i}:timeout"
                 break
             if r.returncode != 0:
+                first_err = f"case{i}:runtime({(r.stderr or '').strip()[:80]})"
                 break
             if _norm_out(r.stdout) != _norm_out(case["output"]):
+                first_err = f"case{i}:mismatch"
                 break
             n_pass += 1
-        return n_pass, total
+        return n_pass, total, first_err
     finally:
         shutil.rmtree(td, ignore_errors=True)
 
@@ -204,20 +208,26 @@ def load_used_questions():
 # ── 单条构造（闭环）────────────────────────────────────────────
 def build_sample(item, tests):
     question = item.get("question")
-    for _ in range(MAX_RETRY):
+    for attempt in range(MAX_RETRY):
         try:
             plan = call_llm([{"role": "user", "content": PLAN_PROMPT.format(question=question)}])
             raw = call_llm([{"role": "user", "content": IMPL_PROMPT.format(question=question, plan=plan)}])
             code = extract_code(raw)
             if not code or not is_valid_py3(code):
                 continue
-            n_pass, total = run_code(code, tests)
+            n_pass, total, first_err = run_code(code, tests)
             if n_pass == total and total > 0:
-                return {"question": question, "plan": plan, "code": code,
-                        "difficulty": item.get("difficulty")}
-        except Exception:
-            continue
-    return None
+                return {"ok": True, "sample": {"question": question, "plan": plan, "code": code,
+                                               "difficulty": item.get("difficulty")}}
+            return {"ok": False, "failure": {"question": question, "plan": plan, "code": code,
+                                             "difficulty": item.get("difficulty"), "err": first_err,
+                                             "n_pass": n_pass, "total": total, "attempt": attempt}}
+        except Exception as e:
+            return {"ok": False, "failure": {"question": question,
+                                             "difficulty": item.get("difficulty"),
+                                             "err": f"exception:{type(e).__name__}:{e}", "attempt": attempt}}
+    return {"ok": False, "failure": {"question": question, "difficulty": item.get("difficulty"),
+                                     "err": "max_retry(empty_or_syntax)"}}
 
 
 # ── 前置校验（--check，零成本，先跑这个再烧钱）──────────────────
@@ -260,6 +270,8 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     out_plan = os.path.join(out_dir, "plan_sft.jsonl")
     out_impl = os.path.join(out_dir, "impl_sft.jsonl")
+    out_rejected = os.path.join(out_dir, "rejected.jsonl")
+    out_manifest = os.path.join(out_dir, "manifest.json")
 
     print("加载 TACO ...")
     files = sorted(glob.glob(os.path.join(TACO_DIR, "train", "*.arrow")))
@@ -278,21 +290,28 @@ def main():
 
     # 过滤 + 参考解自检（筛问题质量）
     cand = []
+    skip = {"interactive": 0, "empty": 0, "py2": 0, "overlap": 0, "no_tests": 0, "ref_fail": 0}
     for item in ds:
         q = (item.get("question") or "").strip()
         if "interactive" in q.lower():
+            skip["interactive"] += 1
             continue
         sols = _as_list(item.get("solutions"))
         if not sols or not isinstance(sols[0], str) or not sols[0].strip():
+            skip["empty"] += 1
             continue
         if not is_valid_py3(sols[0]):
+            skip["py2"] += 1
             continue
         if q in used:
+            skip["overlap"] += 1
             continue
         tests = parse_tests(item.get("input_output"))
         if not tests:
+            skip["no_tests"] += 1
             continue
         if not ref_passes(sols[0], tests):
+            skip["ref_fail"] += 1
             continue
         cand.append((item, tests))
 
@@ -301,6 +320,7 @@ def main():
     print(f"  自检后候选 {len(cand)} 条，开始闭环构造 {plan_n} 条（并发 {CONCURRENCY}）...")
 
     kept = []
+    rejected = []
     n_done = 0
 
     def work(i_item):
@@ -312,16 +332,43 @@ def main():
         for fut in as_completed(futs):
             n_done += 1
             res = fut.result()
-            if res is not None:
-                kept.append(res)
+            if res is not None and res.get("ok"):
+                kept.append(res["sample"])
+            elif res is not None:
+                rejected.append(res["failure"])
             if n_done % 100 == 0:
-                print(f"  已处理 {n_done}/{len(cand)}，保留 {len(kept)}", flush=True)
+                print(f"  已处理 {n_done}/{len(cand)}，保留 {len(kept)}，拒绝 {len(rejected)}", flush=True)
             if len(kept) >= plan_n:
                 for f in futs:
                     f.cancel()
                 break
 
     kept = kept[:plan_n]
+
+    # 写被拒样本（含失败原因，供分析"为什么闭环拒绝"）
+    with open(out_rejected, "w", encoding="utf-8") as fr:
+        for r in rejected:
+            fr.write(json.dumps(r, ensure_ascii=False) + "\n")
+
+    # 写 manifest（过滤统计 + 难度分布 + 接受率 + 配置，审计/复现用）
+    from collections import Counter
+    diff_kept = dict(Counter(s.get("difficulty") or "UNKNOWN" for s in kept))
+    err_dist = dict(Counter(r["err"].split(":")[0] for r in rejected))
+    manifest = {
+        "plan_n": plan_n,
+        "config": {"check_max_tests": CHECK_MAX_TESTS, "closed_loop_tests": CLOSED_LOOP_TESTS,
+                   "max_retry": MAX_RETRY, "seed": SEED, "concurrency": CONCURRENCY},
+        "skip_stats": skip,
+        "candidates": len(cand),
+        "processed": n_done,
+        "kept": len(kept),
+        "rejected": len(rejected),
+        "acceptance_rate": (len(kept) / n_done) if n_done else 0.0,
+        "difficulty_kept": diff_kept,
+        "reject_err_dist": err_dist,
+    }
+    with open(out_manifest, "w", encoding="utf-8") as fm:
+        json.dump(manifest, fm, ensure_ascii=False, indent=2)
 
     # 写两条样本
     with open(out_plan, "w", encoding="utf-8") as fp, open(out_impl, "w", encoding="utf-8") as fi:
@@ -344,9 +391,11 @@ def main():
             fp.write(json.dumps(plan_sample, ensure_ascii=False) + "\n")
             fi.write(json.dumps(impl_sample, ensure_ascii=False) + "\n")
 
-    print(f"\n✅ 保留 {len(kept)} 条（处理 {n_done}/{len(cand)}）")
+    print(f"\n✅ 保留 {len(kept)} 条（处理 {n_done}/{len(cand)}，拒绝 {len(rejected)}）")
     print(f"   样本A（题目→伪代码）：{out_plan}")
     print(f"   样本B（题目+伪代码→代码）：{out_impl}")
+    print(f"   被拒样本+失败原因：{out_rejected}")
+    print(f"   统计清单：{out_manifest}")
     print("下一步：改 train_lora.py 加载这两份文件做两段式 SFT。")
 
 
