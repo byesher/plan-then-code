@@ -22,6 +22,7 @@ TACO → 过滤 → 排除已用（测试集+train+dev）→ 参考解自检（3
 
 依赖：datasets requests
 """
+import argparse
 import ast
 import glob
 import json
@@ -40,9 +41,9 @@ from datasets import Dataset, concatenate_datasets
 
 # ── 路径与参数 ─────────────────────────────────────────────────
 TACO_DIR = os.path.expanduser("~/autodl-tmp/TACO")
-HARNESS_DIR = os.path.dirname(os.path.abspath(__file__))
-TEST_PROBLEMS_DIR = os.path.abspath(os.path.join(HARNESS_DIR, "..", "benchmark", "problems_cliff"))
-DATA_DIR = os.path.abspath(os.path.join(HARNESS_DIR, "..", "..", "data", "taco_train"))
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))   # 本脚本在 data/ 目录下，相对路径从这里算
+TEST_PROBLEMS_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "eval", "benchmark", "problems_cliff"))
+DATA_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "taco_train"))
 OUT_PLAN = os.path.join(DATA_DIR, "plan_sft.jsonl")     # 样本A：题目→伪代码
 OUT_IMPL = os.path.join(DATA_DIR, "impl_sft.jsonl")     # 样本B：题目+伪代码→代码
 
@@ -247,8 +248,39 @@ def build_sample(item, tests):
     return None
 
 
+# ── 前置校验（--check，零成本，先跑这个再烧钱）──────────────────
+def do_check():
+    print("== 前置校验（零成本，只查路径/红线，不碰 LLM 和测试）==\n")
+    ok = True
+
+    taco_files = glob.glob(os.path.join(TACO_DIR, "train", "*.arrow"))
+    print(f"[{'OK' if taco_files else 'FAIL'}] TACO 数据: {TACO_DIR} 下 {len(taco_files)} 个 arrow")
+
+    test_files = glob.glob(os.path.join(TEST_PROBLEMS_DIR, "*", "problem.json"))
+    print(f"[{'OK' if len(test_files) >= 70 else 'FAIL'}] 测试集: {TEST_PROBLEMS_DIR} 下 {len(test_files)} 题（应 70）")
+
+    used = load_used_questions()
+    print(f"[{'OK' if len(used) >= 400 else 'FAIL'}] 排除键: {len(used)} 条（应 ≈420 = 70测试+300train+50dev）")
+
+    print(f"[{'OK' if API_KEY else 'FAIL'}] DASHSCOPE_API_KEY: {'已设置' if API_KEY else '未设置'}")
+
+    print(f"[{'OK' if os.path.isdir(DATA_DIR) else 'FAIL'}] 数据目录: {DATA_DIR}")
+    print(f"[{'OK' if os.path.isdir(os.path.dirname(OUT_PLAN)) else 'FAIL'}] 输出目录: {os.path.dirname(OUT_PLAN)}")
+
+    print("\n上面有 FAIL 就修完再跑全量；全 OK 才烧钱。")
+
+
 # ── 主流程 ─────────────────────────────────────────────────────
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--plan-n", type=int, default=PLAN_N, help="目标保留样本数（默认 1000）")
+    ap.add_argument("--check", action="store_true", help="只做前置校验，不生成数据")
+    args = ap.parse_args()
+    if args.check:
+        do_check()
+        return
+    plan_n = args.plan_n
+
     print("加载 TACO ...")
     files = sorted(glob.glob(os.path.join(TACO_DIR, "train", "*.arrow")))
     if not files:
@@ -258,6 +290,11 @@ def main():
 
     used = load_used_questions()
     print(f"  排除键 {len(used)} 条\n")
+    if len(used) < 100:
+        raise RuntimeError(
+            f"⚠️ 排除键只有 {len(used)} 条（应 ≈420 = 70测试集 + 300train + 50dev），"
+            f"说明 TEST_PROBLEMS_DIR / DATA_DIR 路径错了，训练集没排除评测题！先修路径再跑。"
+        )
 
     # 过滤 + 参考解自检（筛问题质量）
     cand = []
@@ -281,7 +318,7 @@ def main():
 
     rng = random.Random(SEED)
     rng.shuffle(cand)
-    print(f"  自检后候选 {len(cand)} 条，开始闭环构造 {PLAN_N} 条（并发 {CONCURRENCY}）...")
+    print(f"  自检后候选 {len(cand)} 条，开始闭环构造 {plan_n} 条（并发 {CONCURRENCY}）...")
 
     kept = []
     n_done = 0
@@ -299,12 +336,12 @@ def main():
                 kept.append(res)
             if n_done % 100 == 0:
                 print(f"  已处理 {n_done}/{len(cand)}，保留 {len(kept)}", flush=True)
-            if len(kept) >= PLAN_N:
+            if len(kept) >= plan_n:
                 for f in futs:
                     f.cancel()
                 break
 
-    kept = kept[:PLAN_N]
+    kept = kept[:plan_n]
 
     # 写两条样本
     with open(OUT_PLAN, "w", encoding="utf-8") as fp, open(OUT_IMPL, "w", encoding="utf-8") as fi:
