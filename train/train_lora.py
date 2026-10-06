@@ -16,9 +16,9 @@ trl 的 SFTTrainer 对 torch 版本敏感（import 时要求 torch>=2.4 才有 D
 ]
 用 tokenizer.apply_chat_template 转成 Qwen2.5 对话文本，tokenize 后做因果 LM 训练。
 
-【关键配置】（策略①：防灾难性遗忘）
-- 数据混合：train_sft.jsonl（300 伪代码样本）+ ordinary_sft.jsonl（3000 普通代码样本）shuffle 后一起训。
-- 温和超参：r=8、alpha=16、lr=1e-4、1 epoch（原来 r=16/lr=2e-4/3epoch 导致过拟合遗忘）。
+【关键配置】（两段式，20261007）
+- 数据：plan1000/plan_sft.jsonl（题目→伪代码）+ plan1000/impl_sft.jsonl（题目+伪代码→代码），shuffle 后一起训。
+- 温和超参：r=8、alpha=16、lr=1e-4、1 epoch。
 - bf16 LoRA（A100）；4090 上把 USE_4BIT=1 走 QLoRA（4bit nf4）。
 - gradient checkpointing + enable_input_require_grads（LoRA 冻结底座时必须，否则梯度断）。
 
@@ -49,10 +49,10 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 # ── 路径与参数 ─────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.environ.get("MODEL_PATH", os.path.expanduser("~/autodl-tmp/Qwen2.5-7B-Instruct"))
-# 策略①：数据混合——伪代码样本 + 普通代码样本（防灾难性遗忘）
-PSEUDO_PATH = os.path.join(BASE_DIR, "..", "data", "taco_train", "train_sft.jsonl")
-ORDINARY_PATH = os.path.join(BASE_DIR, "..", "data", "taco_train", "ordinary_sft.jsonl")
-OUT_DIR = os.environ.get("OUT_DIR", os.path.expanduser("~/autodl-tmp/plan-then-code-lora"))
+# 两段式：样本A（题目→伪代码）+ 样本B（题目+伪代码→代码）
+PLAN_PATH = os.path.join(BASE_DIR, "..", "data", "taco_train", "plan1000", "plan_sft.jsonl")
+IMPL_PATH = os.path.join(BASE_DIR, "..", "data", "taco_train", "plan1000", "impl_sft.jsonl")
+OUT_DIR = os.environ.get("OUT_DIR", os.path.expanduser("~/autodl-tmp/plan-then-code-lora-plan"))
 
 USE_4BIT = os.environ.get("USE_4BIT", "0") == "1"   # 4090 上设 1（QLoRA）；A100 上 0（bf16 LoRA）
 MAX_SAMPLES = int(os.environ.get("MAX_SAMPLES", "0")) or None  # 冒烟测试：设 50 只训 50 条
@@ -92,7 +92,7 @@ def load_dataset(paths):
 
 def main():
     print(f"模型：{MODEL_PATH}")
-    print(f"数据：{PSEUDO_PATH} + {ORDINARY_PATH}（{MAX_SAMPLES or '全部'} 条，混合）")
+    print(f"数据：{PLAN_PATH} + {IMPL_PATH}（{MAX_SAMPLES or '全部'} 条，混合）")
     print(f"输出：{OUT_DIR}  4bit={USE_4BIT}\n")
 
     # ── tokenizer ──
@@ -134,7 +134,7 @@ def main():
     model.enable_input_require_grads()
 
     # ── 数据：messages → Qwen2.5 对话文本 → tokenize ──
-    ds = load_dataset([PSEUDO_PATH, ORDINARY_PATH])
+    ds = load_dataset([PLAN_PATH, IMPL_PATH])
 
     def tokenize(examples):
         texts = [
@@ -184,7 +184,7 @@ def main():
         json.dump(
             {
                 "model_path": MODEL_PATH,
-                "data_paths": [PSEUDO_PATH, ORDINARY_PATH],
+                "data_paths": [PLAN_PATH, IMPL_PATH],
                 "n_samples": len(ds),
                 "use_4bit": USE_4BIT,
                 "lora": {"r": LORA_R, "alpha": LORA_ALPHA, "dropout": LORA_DROPOUT,
