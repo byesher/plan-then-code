@@ -39,7 +39,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 from datasets import Dataset, concatenate_datasets
 
-from llm_api import call_llm
+from llm_api import call_llm, API_KEY
 
 # ── 路径与参数 ─────────────────────────────────────────────────
 TACO_DIR = os.path.expanduser("~/autodl-tmp/TACO")
@@ -234,7 +234,7 @@ def do_check():
     used = load_used_questions()
     print(f"[{'OK' if len(used) >= 400 else 'FAIL'}] 排除键: {len(used)} 条（应 ≈420 = 70测试+300train+50dev）")
 
-    print(f"[{'OK' if API_KEY else 'FAIL'}] DASHSCOPE_API_KEY: {'已设置' if API_KEY else '未设置'}")
+    print(f"[{'OK' if API_KEY else 'FAIL'}] LLM_API_KEY: {'已设置' if API_KEY else '未设置'}")
 
     print(f"[{'OK' if os.path.isdir(DATA_DIR) else 'FAIL'}] 数据目录: {DATA_DIR}")
     print(f"[{'OK' if os.path.isdir(os.path.dirname(OUT_PLAN)) else 'FAIL'}] 输出目录: {os.path.dirname(OUT_PLAN)}")
@@ -246,12 +246,20 @@ def do_check():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--plan-n", type=int, default=PLAN_N, help="目标保留样本数（默认 1000）")
+    ap.add_argument("--out-dir", type=str, default="", help="输出目录（默认 data/taco_train；新文件夹如 plan1000）")
     ap.add_argument("--check", action="store_true", help="只做前置校验，不生成数据")
     args = ap.parse_args()
     if args.check:
         do_check()
         return
     plan_n = args.plan_n
+    if args.out_dir:
+        out_dir = args.out_dir if os.path.isabs(args.out_dir) else os.path.join(DATA_DIR, args.out_dir)
+    else:
+        out_dir = DATA_DIR
+    os.makedirs(out_dir, exist_ok=True)
+    out_plan = os.path.join(out_dir, "plan_sft.jsonl")
+    out_impl = os.path.join(out_dir, "impl_sft.jsonl")
 
     print("加载 TACO ...")
     files = sorted(glob.glob(os.path.join(TACO_DIR, "train", "*.arrow")))
@@ -316,7 +324,7 @@ def main():
     kept = kept[:plan_n]
 
     # 写两条样本
-    with open(OUT_PLAN, "w", encoding="utf-8") as fp, open(OUT_IMPL, "w", encoding="utf-8") as fi:
+    with open(out_plan, "w", encoding="utf-8") as fp, open(out_impl, "w", encoding="utf-8") as fi:
         for i, s in enumerate(kept):
             q, plan, code = s["question"], s["plan"], s["code"]
             plan_sample = {
@@ -337,8 +345,8 @@ def main():
             fi.write(json.dumps(impl_sample, ensure_ascii=False) + "\n")
 
     print(f"\n✅ 保留 {len(kept)} 条（处理 {n_done}/{len(cand)}）")
-    print(f"   样本A（题目→伪代码）：{OUT_PLAN}")
-    print(f"   样本B（题目+伪代码→代码）：{OUT_IMPL}")
+    print(f"   样本A（题目→伪代码）：{out_plan}")
+    print(f"   样本B（题目+伪代码→代码）：{out_impl}")
     print("下一步：改 train_lora.py 加载这两份文件做两段式 SFT。")
 
 
