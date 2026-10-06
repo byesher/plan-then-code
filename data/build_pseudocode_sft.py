@@ -40,22 +40,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 
+from llm_api import call_llm
+
 # ── 路径 ──────────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RAW_PATH = os.path.join(BASE_DIR, "taco_train", "train_raw.jsonl")          # extract_train_set.py 的产物
 OUT_PATH = os.path.join(BASE_DIR, "taco_train", "train_sft.jsonl")
 SAMPLE_PATH = os.path.join(BASE_DIR, "taco_train", "_sft_sample.json")
 MANIFEST_PATH = os.path.join(BASE_DIR, "taco_train", "_sft_manifest.json")
-
-# ── 强 LLM API（默认通义千问 Qwen-Max，阿里云百炼 DashScope 的 OpenAI 兼容模式）──
-# 换模型/供应商只改这几个：DASHSCOPE_API_KEY / DASHSCOPE_API_BASE / QWEN_MODEL
-API_KEY = os.environ.get("DASHSCOPE_API_KEY", "")
-API_BASE = os.environ.get("DASHSCOPE_API_BASE", "https://dashscope.aliyuncs.com/compatible-mode/v1")
-MODEL = os.environ.get("QWEN_MODEL", "qwen-max")
-API_URL = f"{API_BASE.rstrip('/')}/chat/completions"
-# Qwen 的思考(reasoning)模式：关掉省 token、更快，且 content 直接是干净伪代码。
-# 若 DashScope 报「未知参数 enable_thinking」，把下面改成 None（不发送该字段）即可。
-ENABLE_THINKING = False
 
 # ── 加工参数 ──────────────────────────────────────────────────
 PSEUDO_LANG = "中文"      # 伪代码语言（可改英文；这是后续可消融的设计变量之一）
@@ -88,36 +80,6 @@ SYSTEM_PROMPT = (
 )
 USER_TEMPLATE = "【题目】\n{question}\n\n请先写出分步伪代码，再写出完整可运行的 Python 程序。"
 ASSISTANT_TEMPLATE = "【伪代码】\n{pseudocode}\n\n【代码】\n```python\n{code}\n```"
-
-
-# ── LLM 调用（OpenAI 兼容 chat/completions，带重试）────────────
-def call_llm(messages):
-    if not API_KEY:
-        raise RuntimeError("未设置 DASHSCOPE_API_KEY。先 export DASHSCOPE_API_KEY=sk-xxx")
-    headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
-    payload = {
-        "model": MODEL,
-        "messages": messages,
-        "temperature": LLM_TEMPERATURE,
-        "max_tokens": 4096,
-        "stream": False,
-    }
-    if ENABLE_THINKING is not None:
-        payload["enable_thinking"] = ENABLE_THINKING
-    last_err = None
-    for attempt in range(MAX_RETRIES):
-        try:
-            r = requests.post(API_URL, json=payload, headers=headers, timeout=LLM_TIMEOUT)
-            r.raise_for_status()
-            msg = r.json()["choices"][0]["message"]
-            content = (msg.get("content") or "").strip()
-            if not content:
-                raise RuntimeError(f"LLM 返回空 content：{str(r.json())[:300]}")
-            return content
-        except Exception as e:
-            last_err = e
-            time.sleep(2 ** attempt)  # 1, 2, 4 秒退避
-    raise RuntimeError(f"LLM 调用失败（重试 {MAX_RETRIES} 次）: {last_err}")
 
 
 # ── 单条加工 ──────────────────────────────────────────────────

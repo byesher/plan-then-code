@@ -39,6 +39,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 from datasets import Dataset, concatenate_datasets
 
+from llm_api import call_llm
+
 # ── 路径与参数 ─────────────────────────────────────────────────
 TACO_DIR = os.path.expanduser("~/autodl-tmp/TACO")
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))   # 本脚本在 data/ 目录下，相对路径从这里算
@@ -54,13 +56,6 @@ CLOSED_LOOP_TESTS = 20  # 闭环校验跑全部样例（≤20），尽善尽美
 TEST_TIMEOUT = 10
 SEED = 42
 CONCURRENCY = 8
-
-# ── Qwen-Max API（DashScope 兼容模式）─────────────────────────
-API_KEY = os.environ.get("DASHSCOPE_API_KEY", "")
-API_BASE = os.environ.get("DASHSCOPE_API_BASE", "https://dashscope.aliyuncs.com/compatible-mode/v1")
-MODEL = os.environ.get("QWEN_MODEL", "qwen-max")
-API_URL = f"{API_BASE.rstrip('/')}/chat/completions"
-ENABLE_THINKING = False
 
 # ── 提示词 ─────────────────────────────────────────────────────
 PLAN_PROMPT = (
@@ -80,29 +75,6 @@ IMPL_PROMPT = (
     "【题目】\n{question}\n\n"
     "【伪代码】\n{plan}"
 )
-
-
-def call_llm(messages):
-    if not API_KEY:
-        raise RuntimeError("未设置 DASHSCOPE_API_KEY")
-    headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
-    payload = {"model": MODEL, "messages": messages, "temperature": 0.3, "max_tokens": 4096, "stream": False}
-    if ENABLE_THINKING is not None:
-        payload["enable_thinking"] = ENABLE_THINKING
-    last_err = None
-    for attempt in range(3):
-        try:
-            r = requests.post(API_URL, json=payload, headers=headers, timeout=120)
-            r.raise_for_status()
-            msg = r.json()["choices"][0]["message"]
-            content = (msg.get("content") or "").strip()
-            if not content:
-                raise RuntimeError("空 content")
-            return content
-        except Exception as e:
-            last_err = e
-            time.sleep(2 ** attempt)
-    raise RuntimeError(f"LLM 调用失败: {last_err}")
 
 
 # ── 过滤/工具 ──────────────────────────────────────────────────
