@@ -136,13 +136,19 @@ def build_skeleton(src, cls):
     return "\n".join(out) + "\n"
 
 
-def build_solution(src, cls):
-    """完整类源码（imports + 类定义），作为「实现」ground truth。"""
+def build_solution(src, cls, extra_defs=None):
+    """完整类源码（imports + [依赖闭包] + 类定义），作为「实现」ground truth。"""
     mod = ast.parse(src)
     imports = [ast.get_source_segment(src, n).strip()
                for n in mod.body if isinstance(n, (ast.Import, ast.ImportFrom))]
     cls_src = ast.get_source_segment(src, cls) or ast.unparse(cls)
-    return ("\n".join(imports) + "\n\n" if imports else "") + cls_src
+    parts = []
+    if imports:
+        parts.append("\n".join(imports))
+    if extra_defs:
+        parts.append("\n\n".join(d for d in extra_defs if d))
+    parts.append(cls_src)
+    return "\n\n".join(p for p in parts if p)
 
 
 _BUILTIN_NAMES = set(dir(builtins))
@@ -159,8 +165,8 @@ def is_self_contained(solution, class_name):
 
 
 def find_external_deps(solution, class_name):
-    """抓「方法体引用了、但既非内建/方法/类属性/参数、也非 import」的名字。
-    通常是模块级 helper/常量 → 说明这个类不独立，不能单独跑。"""
+    """抓「方法体读取了、但 solution 里哪里都没定义、也没 import、也不是内建」的名字。
+    闭包后模块级常量/helper 已在 solution 里 → 不再算外部依赖。"""
     try:
         tree = ast.parse(solution)
     except SyntaxError:
@@ -169,7 +175,16 @@ def find_external_deps(solution, class_name):
     if cls is None:
         return ["<no-class>"]
 
-    defined = {class_name}
+    # 已定义的名字 = 模块级定义 + 类级定义
+    defined = set()
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for t in node.targets:
+                defined |= {n.id for n in ast.walk(t) if isinstance(n, ast.Name)}
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            defined.add(node.target.id)
+        elif isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+            defined.add(node.name)
     for stmt in cls.body:
         if isinstance(stmt, ast.FunctionDef):
             defined.add(stmt.name)
@@ -189,10 +204,37 @@ def find_external_deps(solution, class_name):
     referenced = set()
     for stmt in cls.body:
         if isinstance(stmt, ast.FunctionDef):
-            local = {a.arg for a in ast.walk(stmt.args) if isinstance(a, ast.arg)}
-            referenced |= ({n.id for n in ast.walk(stmt) if isinstance(n, ast.Name)} - local)
+            # 方法内被赋值(Store) + 参数名(ast.arg)都是局部；只留「读了但方法内没写」的名字
+            stored = {n.id for n in ast.walk(stmt)
+                      if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)}
+            stored |= {a.arg for a in ast.walk(stmt) if isinstance(a, ast.arg)}
+            loaded = {n.id for n in ast.walk(stmt)
+                      if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
+            referenced |= (loaded - stored)
 
     return sorted(referenced - defined - imported - _BUILTIN_NAMES - {"self", "cls"})
+
+
+def collect_module_defs(src, exclude_name):
+    """收集模块级定义（常量/函数/类）的源码，供依赖闭包用。"""
+    tree = ast.parse(src)
+    defs = {}
+    for node in tree.body:
+        seg = ast.get_source_segment(src, node)
+        if not seg:
+            continue
+        if isinstance(node, ast.Assign):
+            for t in node.targets:
+                for n in ast.walk(t):
+                    if isinstance(n, ast.Name):
+                        defs[n.id] = seg
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            defs[node.target.id] = seg
+        elif isinstance(node, ast.FunctionDef):
+            defs[node.name] = seg
+        elif isinstance(node, ast.ClassDef) and node.name != exclude_name:
+            defs[node.name] = seg
+    return defs
 
 
 def _should_skip(cls):
@@ -229,6 +271,15 @@ def extract_class(src, cls, src_file):
     except SyntaxError:
         return None
 
+    # 依赖闭包：方法体引用的模块级常量/helper，一并带进 solution，让类独立可跑
+    ext_deps = find_external_deps(solution, cls.name)
+    if ext_deps and not any(d.startswith("<") for d in ext_deps):
+        module_defs = collect_module_defs(src, cls.name)
+        closure = list(dict.fromkeys(module_defs[d] for d in ext_deps if d in module_defs))
+        if closure:
+            solution = build_solution(src, cls, extra_defs=closure)
+            ext_deps = find_external_deps(solution, cls.name)  # 闭包后重算
+
     methods_info = []
     for fn in methods:
         methods_info.append({
@@ -248,7 +299,7 @@ def extract_class(src, cls, src_file):
         "source_file": src_file,
         "n_methods": len(methods),
         "self_contained": is_self_contained(solution, cls.name),
-        "external_deps": find_external_deps(solution, cls.name),
+        "external_deps": ext_deps,
     }
 
 
