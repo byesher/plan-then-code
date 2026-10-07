@@ -64,8 +64,8 @@ TARGET_MODULES = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj"
 
 LR = 1e-4            # 策略①：降 lr（2e-4→1e-4）防遗忘
 EPOCHS = 1           # 策略①：降 epoch（3→1），300 步够学格式
-PER_DEVICE_BATCH = 4
-GRAD_ACCUM = 4
+PER_DEVICE_BATCH = 2   # 14B bf16：batch 2 大概率放得下（约33G），比 1 快一倍
+GRAD_ACCUM = 8         # 有效 batch = 2×8 = 16，与 7B 的 4×4=16 一致（控制变量）
 MAX_SEQ_LEN = 2048
 WARMUP_RATIO = 0.05
 LOGGING_STEPS = 10
