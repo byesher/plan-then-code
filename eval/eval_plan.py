@@ -1,22 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-两段式评测：题目 →(step1 伪代码)→ 代码，prompt 与两段式训练【逐字一致】。
+两段式评测（全量落盘版）：题目 →(step1 伪代码)→(step2 代码)，prompt 与训练逐字一致。
 
 对比：
-  baseline  ：base 模型 + 直接写代码（不写伪代码）
-  sft2step  ：SFT 模型 + 两步（先出伪代码，再照伪代码实现代码）
+  baseline ：base 模型 + 直接写代码
+  sft2step ：SFT 模型 + 两步（先伪代码，再照伪代码实现）
 
-【为什么两步、为什么 prompt 逐字一致】
-训练数据是两条分开的样本：
-  样本A  user: 题目 + 「请写出分步伪代码（算法计划），不要写代码」  →  assistant: 伪代码
-  样本B  user: 题目 + 【伪代码】 + 「请严格照着伪代码写出完整可运行的 Python 程序」  →  assistant: ```python 代码```
-所以评测也分两步、用同样的两句话，模型才知道"这一步该干嘛"。
+【这次重点：全量落盘，供离线分析】
+每题都存：
+  baseline/<id>/code_0.py          —— baseline 抽出的代码
+  sft2step/<id>/plan_0.txt         —— step1 生成的伪代码
+  sft2step/<id>/code_0.py          —— step2 生成的代码（抽出）
+  report.json                      —— 逐题结果 + 汇总
 
-【运行】（AutoDL，eval 目录下）
-  python eval_plan.py                                                # 只跑 baseline（base 模型）
-  ADAPTER_PATH=~/autodl-tmp/plan-then-code-lora-plan python eval_plan.py   # baseline + sft2step
-
-依赖：torch transformers peft
+运行（AutoDL，eval 目录下）：
+  ADAPTER_PATH=~/autodl-tmp/plan-then-code-lora-plan python eval_plan.py
+输出目录：eval/results/eval_plan/
 """
 import json
 import os
@@ -42,8 +41,8 @@ MAX_NEW_TOKENS = int(os.environ.get("MAX_NEW_TOKENS", "2048"))
 MAX_EVAL_TESTS = int(os.environ.get("MAX_EVAL_TESTS", "20"))
 TEST_TIMEOUT = 10
 OUT_ROOT = Path(os.environ.get("OUT_ROOT", BASE_DIR / "results"))
+RUN_DIR = OUT_ROOT / "eval_plan"
 
-# ── 与训练逐字一致的 prompt ─────────────────────────────────
 PLAN_PROMPT = "【题目】\n{question}\n\n请写出分步伪代码（算法计划），不要写代码。"
 IMPL_PROMPT = "【题目】\n{question}\n\n【伪代码】\n{plan}\n\n请严格照着伪代码写出完整可运行的 Python 程序。"
 BASELINE_PROMPT = "【题目】\n{question}\n\n请写出完整可运行的 Python 程序，直接输出代码，不要解释。"
@@ -53,8 +52,7 @@ def load_dev():
     items = []
     with open(DEV_PATH, encoding="utf-8") as f:
         for ln in f:
-            ln = ln.strip()
-            if ln:
+            if ln.strip():
                 items.append(json.loads(ln))
     return items
 
@@ -109,59 +107,81 @@ def run_tests(code, tests):
             f.write(code)
         n_pass = 0
         total = len(tests[:MAX_EVAL_TESTS])
-        for case in tests[:MAX_EVAL_TESTS]:
+        first_err = ""
+        for i, case in enumerate(tests[:MAX_EVAL_TESTS]):
             try:
                 r = subprocess.run([sys.executable, "-B", "solution.py"], cwd=td,
                                    input=case["input"], capture_output=True, text=True, timeout=TEST_TIMEOUT)
             except subprocess.TimeoutExpired:
+                first_err = f"case{i}:timeout"
                 break
             if r.returncode != 0:
+                first_err = f"case{i}:runtime({(r.stderr or '').strip()[:80]})"
                 break
             if _norm_out(r.stdout) != _norm_out(case["output"]):
+                first_err = f"case{i}:mismatch"
                 break
             n_pass += 1
-        return n_pass, total
+        return n_pass, total, first_err
     finally:
         shutil.rmtree(td, ignore_errors=True)
 
 
-def eval_baseline(tok, model, items, run_dir):
+def eval_baseline(tok, model, items):
+    mode_dir = RUN_DIR / "baseline"
+    mode_dir.mkdir(parents=True, exist_ok=True)
     results = []
     for it in items:
-        question = it["question"]
+        q = it["question"]
         tests = it.get("tests") or []
-        msgs = [{"role": "user", "content": BASELINE_PROMPT.format(question=question)}]
+        pdir = mode_dir / it["id"]
+        pdir.mkdir(parents=True, exist_ok=True)
+        msgs = [{"role": "user", "content": BASELINE_PROMPT.format(question=q)}]
         gens = generate(tok, model, msgs, NUM_SAMPLES, TEMPERATURE, MAX_NEW_TOKENS)
         best = 0
-        for g in gens:
-            n_pass, total = run_tests(extract_code(g), tests)
-            best = max(best, n_pass)
+        best_err = ""
+        for si, g in enumerate(gens):
+            code = extract_code(g)
+            (pdir / f"code_{si}.py").write_text(code, encoding="utf-8")
+            n_pass, total, first_err = run_tests(code, tests)
+            if n_pass > best:
+                best = n_pass
+                best_err = first_err
         results.append({"id": it["id"], "solved": best == len(tests[:MAX_EVAL_TESTS]) and len(tests) > 0,
-                        "n_pass": best, "n_tests": len(tests[:MAX_EVAL_TESTS])})
+                        "n_pass": best, "n_tests": len(tests[:MAX_EVAL_TESTS]), "err": best_err})
     return results
 
 
-def eval_sft2step(tok, model, items, run_dir):
+def eval_sft2step(tok, model, items):
+    mode_dir = RUN_DIR / "sft2step"
+    mode_dir.mkdir(parents=True, exist_ok=True)
     results = []
     for it in items:
-        question = it["question"]
+        q = it["question"]
         tests = it.get("tests") or []
+        pdir = mode_dir / it["id"]
+        pdir.mkdir(parents=True, exist_ok=True)
         if not tests:
-            results.append({"id": it["id"], "solved": False, "n_pass": 0, "n_tests": 0})
+            results.append({"id": it["id"], "solved": False, "n_pass": 0, "n_tests": 0, "err": "no-tests"})
             continue
-        # step 1: 出伪代码
-        plan_msgs = [{"role": "user", "content": PLAN_PROMPT.format(question=question)}]
+        # step1：出伪代码
+        plan_msgs = [{"role": "user", "content": PLAN_PROMPT.format(question=q)}]
         plan = generate(tok, model, plan_msgs, 1, TEMPERATURE, MAX_NEW_TOKENS)[0]
-        # step 2: 照伪代码实现代码
-        impl_msgs = [{"role": "user", "content": IMPL_PROMPT.format(question=question, plan=plan)}]
+        (pdir / "plan_0.txt").write_text(plan, encoding="utf-8")
+        # step2：照伪代码实现
+        impl_msgs = [{"role": "user", "content": IMPL_PROMPT.format(question=q, plan=plan)}]
         code_raws = generate(tok, model, impl_msgs, NUM_SAMPLES, TEMPERATURE, MAX_NEW_TOKENS)
         best = 0
-        for raw in code_raws:
-            n_pass, total = run_tests(extract_code(raw), tests)
-            best = max(best, n_pass)
+        best_err = ""
+        for si, raw in enumerate(code_raws):
+            code = extract_code(raw)
+            (pdir / f"code_{si}.py").write_text(code, encoding="utf-8")
+            n_pass, total, first_err = run_tests(code, tests)
+            if n_pass > best:
+                best = n_pass
+                best_err = first_err
         results.append({"id": it["id"], "solved": best == len(tests[:MAX_EVAL_TESTS]),
-                        "n_pass": best, "n_tests": len(tests[:MAX_EVAL_TESTS]),
-                        "plan": plan[:300]})
+                        "n_pass": best, "n_tests": len(tests[:MAX_EVAL_TESTS]), "err": best_err})
     return results
 
 
@@ -174,15 +194,16 @@ def summarize(results):
 def main():
     items = load_dev()
     print(f"dev 集 {len(items)} 题，NUM_SAMPLES={NUM_SAMPLES}，temperature={TEMPERATURE}\n")
+    RUN_DIR.mkdir(parents=True, exist_ok=True)
 
     tok, model = load_model()
-    run_dir = OUT_ROOT / "eval_plan"
-    run_dir.mkdir(parents=True, exist_ok=True)
-
     summaries = {}
+    all_results = {}
+
     print("跑 baseline（直接写代码）...")
-    r = eval_baseline(tok, model, items, run_dir)
+    r = eval_baseline(tok, model, items)
     summaries["baseline"] = summarize(r)
+    all_results["baseline"] = r
     print(f"  baseline: pass@1={summaries['baseline']['pass@1']:.1%} ({summaries['baseline']['solved']}/{summaries['baseline']['n']})\n")
 
     if ADAPTER_PATH:
@@ -190,8 +211,9 @@ def main():
         del model
         torch.cuda.empty_cache()
         _, model2 = load_model(ADAPTER_PATH)
-        r = eval_sft2step(tok, model2, items, run_dir)
+        r = eval_sft2step(tok, model2, items)
         summaries["sft2step"] = summarize(r)
+        all_results["sft2step"] = r
         print(f"  sft2step: pass@1={summaries['sft2step']['pass@1']:.1%} ({summaries['sft2step']['solved']}/{summaries['sft2step']['n']})\n")
     else:
         print("⚠️ 没设 ADAPTER_PATH，跳过 sft2step。")
@@ -203,9 +225,16 @@ def main():
         d = summaries["sft2step"]["pass@1"] - summaries["baseline"]["pass@1"]
         print(f"\nSFT 两步效应 = {d:+.1%}")
 
-    out = run_dir / "report.json"
-    out.write_text(json.dumps({"summary": summaries}, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"\n报告：{out}")
+    report = {
+        "summary": summaries,
+        "results": all_results,
+        "config": {"adapter": ADAPTER_PATH or None, "num_samples": NUM_SAMPLES,
+                   "temperature": TEMPERATURE, "max_new_tokens": MAX_NEW_TOKENS},
+    }
+    out = RUN_DIR / "report.json"
+    out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"\n全量结果已存到：{RUN_DIR}")
+    print(f"  report.json（逐题+汇总）、baseline/<id>/code_0.py、sft2step/<id>/plan_0.txt + code_0.py")
 
 
 if __name__ == "__main__":
