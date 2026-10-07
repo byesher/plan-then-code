@@ -108,21 +108,33 @@ def run_tests(code, tests):
         n_pass = 0
         total = len(tests[:MAX_EVAL_TESTS])
         first_err = ""
+        cases = []
         for i, case in enumerate(tests[:MAX_EVAL_TESTS]):
+            rec = {"idx": i, "passed": False, "error": "", "actual": "", "expected": (case["output"] or "")[:200]}
             try:
                 r = subprocess.run([sys.executable, "-B", "solution.py"], cwd=td,
                                    input=case["input"], capture_output=True, text=True, timeout=TEST_TIMEOUT)
             except subprocess.TimeoutExpired:
+                rec["error"] = "timeout"
                 first_err = f"case{i}:timeout"
+                cases.append(rec)
                 break
+            rec["actual"] = (r.stdout or "")[:200]
+            rec["stderr"] = (r.stderr or "")[:200]
             if r.returncode != 0:
+                rec["error"] = "runtime"
                 first_err = f"case{i}:runtime({(r.stderr or '').strip()[:80]})"
+                cases.append(rec)
                 break
             if _norm_out(r.stdout) != _norm_out(case["output"]):
+                rec["error"] = "mismatch"
                 first_err = f"case{i}:mismatch"
+                cases.append(rec)
                 break
+            rec["passed"] = True
             n_pass += 1
-        return n_pass, total, first_err
+            cases.append(rec)
+        return n_pass, total, first_err, cases
     finally:
         shutil.rmtree(td, ignore_errors=True)
 
@@ -140,15 +152,19 @@ def eval_baseline(tok, model, items):
         gens = generate(tok, model, msgs, NUM_SAMPLES, TEMPERATURE, MAX_NEW_TOKENS)
         best = 0
         best_err = ""
+        best_cases = []
         for si, g in enumerate(gens):
+            (pdir / f"raw_{si}.txt").write_text(g, encoding="utf-8")   # 原始输出（含围栏）
             code = extract_code(g)
             (pdir / f"code_{si}.py").write_text(code, encoding="utf-8")
-            n_pass, total, first_err = run_tests(code, tests)
+            n_pass, total, first_err, cases = run_tests(code, tests)
             if n_pass > best:
                 best = n_pass
                 best_err = first_err
+                best_cases = cases
         results.append({"id": it["id"], "solved": best == len(tests[:MAX_EVAL_TESTS]) and len(tests) > 0,
-                        "n_pass": best, "n_tests": len(tests[:MAX_EVAL_TESTS]), "err": best_err})
+                        "n_pass": best, "n_tests": len(tests[:MAX_EVAL_TESTS]), "err": best_err,
+                        "cases": best_cases})
     return results
 
 
@@ -173,15 +189,19 @@ def eval_sft2step(tok, model, items):
         code_raws = generate(tok, model, impl_msgs, NUM_SAMPLES, TEMPERATURE, MAX_NEW_TOKENS)
         best = 0
         best_err = ""
+        best_cases = []
         for si, raw in enumerate(code_raws):
+            (pdir / f"raw_{si}.txt").write_text(raw, encoding="utf-8")  # step2 原始输出（含围栏）
             code = extract_code(raw)
             (pdir / f"code_{si}.py").write_text(code, encoding="utf-8")
-            n_pass, total, first_err = run_tests(code, tests)
+            n_pass, total, first_err, cases = run_tests(code, tests)
             if n_pass > best:
                 best = n_pass
                 best_err = first_err
+                best_cases = cases
         results.append({"id": it["id"], "solved": best == len(tests[:MAX_EVAL_TESTS]),
-                        "n_pass": best, "n_tests": len(tests[:MAX_EVAL_TESTS]), "err": best_err})
+                        "n_pass": best, "n_tests": len(tests[:MAX_EVAL_TESTS]), "err": best_err,
+                        "cases": best_cases})
     return results
 
 
