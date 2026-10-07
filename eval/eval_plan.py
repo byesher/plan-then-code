@@ -150,7 +150,7 @@ def eval_baseline(tok, model, items):
         pdir.mkdir(parents=True, exist_ok=True)
         msgs = [{"role": "user", "content": BASELINE_PROMPT.format(question=q)}]
         gens = generate(tok, model, msgs, NUM_SAMPLES, TEMPERATURE, MAX_NEW_TOKENS)
-        best = 0
+        best = -1
         best_err = ""
         best_cases = []
         for si, g in enumerate(gens):
@@ -187,7 +187,7 @@ def eval_sft2step(tok, model, items):
         # step2：照伪代码实现
         impl_msgs = [{"role": "user", "content": IMPL_PROMPT.format(question=q, plan=plan)}]
         code_raws = generate(tok, model, impl_msgs, NUM_SAMPLES, TEMPERATURE, MAX_NEW_TOKENS)
-        best = 0
+        best = -1
         best_err = ""
         best_cases = []
         for si, raw in enumerate(code_raws):

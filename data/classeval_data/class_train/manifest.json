@@ -1,0 +1,37 @@
+{
+  "input": "classeval_test.jsonl",
+  "total": 100,
+  "kept_per_form": {
+    "sig": 91,
+    "sig_contract": 91,
+    "typed_docstring": 91,
+    "todo": 91
+  },
+  "rejected": 12,
+  "acceptance_rate": {
+    "sig": 0.91,
+    "sig_contract": 0.91,
+    "typed_docstring": 0.91,
+    "todo": 0.91
+  },
+  "method_dist": {
+    "min": 3,
+    "median": 5,
+    "max": 10,
+    "avg": 5.02
+  },
+  "reject_stage_dist": {
+    "verify": 8,
+    "structure": 4
+  },
+  "config": {
+    "verify_timeout": 30,
+    "forms": [
+      "sig",
+      "sig_contract",
+      "typed_docstring",
+      "todo"
+    ]
+  },
+  "requirement_template": "实现一个类 `{class_name}`：\n\n{class_description}\n"
+}
