@@ -271,14 +271,18 @@ def extract_class(src, cls, src_file):
     except SyntaxError:
         return None
 
-    # 依赖闭包：方法体引用的模块级常量/helper，一并带进 solution，让类独立可跑
+    # 依赖闭包：方法体引用的模块级常量/helper + 继承的模块级基类，一并带进 solution
     ext_deps = find_external_deps(solution, cls.name)
-    if ext_deps and not any(d.startswith("<") for d in ext_deps):
-        module_defs = collect_module_defs(src, cls.name)
-        closure = list(dict.fromkeys(module_defs[d] for d in ext_deps if d in module_defs))
-        if closure:
-            solution = build_solution(src, cls, extra_defs=closure)
-            ext_deps = find_external_deps(solution, cls.name)  # 闭包后重算
+    module_defs = collect_module_defs(src, cls.name)
+    closure = list(dict.fromkeys(module_defs[d] for d in ext_deps
+                                 if d in module_defs and not d.startswith("<")))
+    for b in cls.bases:  # 基类闭包（如 FastIterOrderedMultiDict 继承 OrderedMultiDict）
+        if isinstance(b, ast.Name) and b.id in module_defs and b.id not in _BUILTIN_NAMES:
+            closure.append(module_defs[b.id])
+    closure = list(dict.fromkeys(closure))
+    if closure:
+        solution = build_solution(src, cls, extra_defs=closure)
+        ext_deps = find_external_deps(solution, cls.name)  # 闭包后重算
 
     methods_info = []
     for fn in methods:
