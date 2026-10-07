@@ -63,16 +63,19 @@ def clone_repo(repo, dst):
 
 
 def find_src_dir(repo_dir):
-    """找到真正的「包源码」目录（跳过 .git/test/venv）。"""
-    # 常见：repo/ 下有个同名包目录，如 boltons/boltons/
-    for name in sorted(os.listdir(repo_dir)):
+    """找到真正的「包源码」目录：跳过 ci_tools/docs/tests 等，选 .py 文件最多的目录。"""
+    skip = {".git", "tests", "test", "docs", "venv", "__pycache__", "ci_tools", "tools",
+            "examples", "benchmarks", "scripts", "ci"}
+    best, best_count = repo_dir, 0
+    for name in os.listdir(repo_dir):
         p = os.path.join(repo_dir, name)
-        if os.path.isdir(p) and name not in (".git", "tests", "test", "docs", "venv", "__pycache__"):
-            # 目录里有没有 .py 文件？
-            has_py = any(f.endswith(".py") for _, _, fs in os.walk(p) for f in fs)
-            if has_py and not name.startswith("."):
-                return p
-    return repo_dir
+        if not os.path.isdir(p) or name.startswith(".") or name in skip:
+            continue
+        cnt = sum(1 for _, _, fs in os.walk(p) for f in fs
+                  if f.endswith(".py") and "test" not in f.lower())
+        if cnt > best_count:
+            best, best_count = p, cnt
+    return best
 
 
 def walk_py_files(root):
@@ -212,6 +215,21 @@ def find_external_deps(solution, class_name):
                       if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
             referenced |= (loaded - stored)
 
+    # 类型注解里的名字（Self/TypeVar/Protocol/泛型基类里的 KT/VT）不是运行时依赖，忽略
+    ann_names = set()
+    for stmt in cls.body:
+        if isinstance(stmt, ast.FunctionDef):
+            for a in ast.walk(stmt.args):
+                if isinstance(a, ast.arg) and a.annotation:
+                    ann_names |= {n.id for n in ast.walk(a.annotation) if isinstance(n, ast.Name)}
+            if stmt.returns:
+                ann_names |= {n.id for n in ast.walk(stmt.returns) if isinstance(n, ast.Name)}
+        elif isinstance(stmt, ast.AnnAssign) and stmt.annotation:
+            ann_names |= {n.id for n in ast.walk(stmt.annotation) if isinstance(n, ast.Name)}
+    for b in cls.bases:
+        ann_names |= {n.id for n in ast.walk(b) if isinstance(n, ast.Name)}
+    referenced -= ann_names
+
     return sorted(referenced - defined - imported - _BUILTIN_NAMES - {"self", "cls"})
 
 
@@ -276,9 +294,10 @@ def extract_class(src, cls, src_file):
     module_defs = collect_module_defs(src, cls.name)
     closure = list(dict.fromkeys(module_defs[d] for d in ext_deps
                                  if d in module_defs and not d.startswith("<")))
-    for b in cls.bases:  # 基类闭包（如 FastIterOrderedMultiDict 继承 OrderedMultiDict）
-        if isinstance(b, ast.Name) and b.id in module_defs and b.id not in _BUILTIN_NAMES:
-            closure.append(module_defs[b.id])
+    for b in cls.bases:  # 基类闭包（含泛型基类里的 TypeVar，如 MutableMapping[KT, VT]）
+        for n in ast.walk(b):
+            if isinstance(n, ast.Name) and n.id in module_defs and n.id not in _BUILTIN_NAMES:
+                closure.append(module_defs[n.id])
     closure = list(dict.fromkeys(closure))
     if closure:
         solution = build_solution(src, cls, extra_defs=closure)
