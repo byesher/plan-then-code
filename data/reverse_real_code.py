@@ -33,6 +33,7 @@
 """
 import argparse
 import ast
+import builtins
 import json
 import os
 import subprocess
@@ -108,26 +109,30 @@ def build_skeleton(src, cls):
     if cls_doc:
         out.append(B._quote_block(cls_doc, 4))
 
-    for fn in cls.body:
-        if not isinstance(fn, ast.FunctionDef):
-            continue
-        defline = B._fn_def(fn).replace("\n", "\n    ")
-        out.append("    " + defline)
-        if fn.name in KEEP_BODY_METHODS:
-            # 构造函数保留真实语句（去掉 docstring），这是「给定的字段初始化」
-            stmts = [s for s in fn.body
-                     if not (isinstance(s, ast.Expr) and isinstance(s.value, ast.Constant)
-                             and isinstance(s.value.value, str))]
-            if stmts:
-                for s in stmts:
-                    out.append("        " + ast.unparse(s))
+    for stmt in cls.body:
+        if isinstance(stmt, ast.FunctionDef):
+            fn = stmt
+            defline = B._fn_def(fn).replace("\n", "\n    ")
+            out.append("    " + defline)
+            if fn.name in KEEP_BODY_METHODS:
+                # 构造函数保留真实语句（去掉 docstring），这是「给定的字段初始化」
+                stmts = [s for s in fn.body
+                         if not (isinstance(s, ast.Expr) and isinstance(s.value, ast.Constant)
+                                 and isinstance(s.value.value, str))]
+                if stmts:
+                    for s in stmts:
+                        out.append("        " + ast.unparse(s))
+                else:
+                    out.append("        pass")
             else:
+                doc = ast.get_docstring(fn, clean=True) or ""
+                if doc:
+                    out.append(B._quote_block(doc, 8))
                 out.append("        pass")
-        else:
-            doc = ast.get_docstring(fn, clean=True) or ""
-            if doc:
-                out.append(B._quote_block(doc, 8))
-            out.append("        pass")
+        elif isinstance(stmt, (ast.Assign, ast.AnnAssign)):
+            # 类级属性（__slots__、类常量）→ 属于结构，保留
+            out.append("    " + ast.unparse(stmt).replace("\n", "\n    "))
+        # 其余（docstring Expr、嵌套类等）跳过
     return "\n".join(out) + "\n"
 
 
@@ -138,6 +143,73 @@ def build_solution(src, cls):
                for n in mod.body if isinstance(n, (ast.Import, ast.ImportFrom))]
     cls_src = ast.get_source_segment(src, cls) or ast.unparse(cls)
     return ("\n".join(imports) + "\n\n" if imports else "") + cls_src
+
+
+_BUILTIN_NAMES = set(dir(builtins))
+
+
+def is_self_contained(solution, class_name):
+    """solution 能否独立 exec 并定义出类（抓：缺基类/缺装饰器/类级 NameError）。"""
+    try:
+        ns = {}
+        exec(compile(solution, "<solution>", "exec"), ns)
+        return class_name in ns
+    except Exception:
+        return False
+
+
+def find_external_deps(solution, class_name):
+    """抓「方法体引用了、但既非内建/方法/类属性/参数、也非 import」的名字。
+    通常是模块级 helper/常量 → 说明这个类不独立，不能单独跑。"""
+    try:
+        tree = ast.parse(solution)
+    except SyntaxError:
+        return ["<syntax-error>"]
+    cls = next((n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == class_name), None)
+    if cls is None:
+        return ["<no-class>"]
+
+    defined = {class_name}
+    for stmt in cls.body:
+        if isinstance(stmt, ast.FunctionDef):
+            defined.add(stmt.name)
+        elif isinstance(stmt, ast.Assign):
+            for t in stmt.targets:
+                defined |= {n.id for n in ast.walk(t) if isinstance(n, ast.Name)}
+        elif isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+            defined.add(stmt.target.id)
+
+    imported = set()
+    for n in tree.body:
+        if isinstance(n, ast.Import):
+            imported |= {(a.asname or a.name).split(".")[0] for a in n.names}
+        elif isinstance(n, ast.ImportFrom):
+            imported |= {(a.asname or a.name) for a in n.names if a.name != "*"}
+
+    referenced = set()
+    for stmt in cls.body:
+        if isinstance(stmt, ast.FunctionDef):
+            local = {a.arg for a in ast.walk(stmt.args) if isinstance(a, ast.arg)}
+            referenced |= ({n.id for n in ast.walk(stmt) if isinstance(n, ast.Name)} - local)
+
+    return sorted(referenced - defined - imported - _BUILTIN_NAMES - {"self", "cls"})
+
+
+def _should_skip(cls):
+    """过滤非目标类，返回跳过原因；None 表示保留。
+    目标 = 用户面向的「数据结构/工具」类，不是内部辅助/元编程/异常类。"""
+    if cls.name.startswith("_"):
+        return "internal(下划线开头)"
+    method_names = {n.name for n in cls.body if isinstance(n, ast.FunctionDef)}
+    if method_names & {"__get__", "__set__", "__delete__", "__set_name__"}:
+        return "descriptor(描述符类)"
+    if cls.name.endswith(("Error", "Exception", "Warning", "Mixin")):
+        return "exception/mixin(名字)"
+    for b in cls.bases:
+        bn = ast.unparse(b)
+        if bn in ("Exception", "BaseException", "Warning", "UserWarning", "ABC"):
+            return f"base({bn})"
+    return None
 
 
 def extract_class(src, cls, src_file):
@@ -168,13 +240,15 @@ def extract_class(src, cls, src_file):
         "task_id": src_file.replace("/", "_").replace("\\", "_").replace(".py", "") + "_" + cls.name,
         "skeleton": skeleton,
         "solution_code": solution,
-        "test": "",  # 后续阶段填（复用库自带测试）
+        "test": "",  # 后续阶段填（复用库自带测试，评测集用）
         "class_description": cls_doc,
         "class_name": cls.name,
         "import_statement": [],  # solution_code 已含 imports，这里留空
         "methods_info": methods_info,
         "source_file": src_file,
         "n_methods": len(methods),
+        "self_contained": is_self_contained(solution, cls.name),
+        "external_deps": find_external_deps(solution, cls.name),
     }
 
 
@@ -208,6 +282,7 @@ def main():
     py_files = walk_py_files(src_root)
     print(f"扫描 {len(py_files)} 个 .py 文件 ...")
     classes = []
+    skip_stats = Counter()
     for fp in py_files:
         try:
             src = B._sanitize(open(fp, encoding="utf-8").read())
@@ -216,6 +291,10 @@ def main():
             continue
         for node in tree.body:
             if isinstance(node, ast.ClassDef):
+                skip = _should_skip(node)
+                if skip:
+                    skip_stats[skip] += 1
+                    continue
                 rel = os.path.relpath(fp, repo_dir)
                 c = extract_class(src, node, rel)
                 if c:
@@ -233,13 +312,19 @@ def main():
 
     # 4) 摘要（让用户一眼看懂抽到了什么）
     method_dist = dict(Counter(c["n_methods"] for c in classes))
+    n_clean = sum(1 for c in classes if c["self_contained"] and not c["external_deps"])
     print(f"\n✅ 抽出 {len(classes)} 个类（≥{MIN_METHODS} 方法 + 有文档），写到：{out}")
     print(f"   方法数分布：{dict(sorted(method_dist.items()))}")
-    print("\n   示例（前 3 个类名 + 方法数）：")
+    print(f"   完全自包含（能独立跑、无模块级依赖）：{n_clean}/{len(classes)}")
+    if skip_stats:
+        print(f"   过滤掉的类：{dict(skip_stats)}")
+    print("\n   示例（前 3 个类名 + 方法数 + 是否自包含）：")
     for c in classes[:3]:
-        print(f"     - {c['class_name']:<30} {c['n_methods']} 方法  <- {c['source_file']}")
-    print("\n下一步：看 jsonl 内容；确认抽得对后，写第②步（LLM 反推需求）和第③步（抽测试）。")
-    print("第⑤步转两段式样本：python build_class_sft.py --input classes.jsonl --out-dir xxx --no-verify")
+        mark = "✔" if (c["self_contained"] and not c["external_deps"]) else "✘ 依赖:" + ",".join(c["external_deps"][:4])
+        print(f"     - {c['class_name']:<28} {c['n_methods']} 方法  {mark}  <- {c['source_file']}")
+    print("\n下一步：只有「完全自包含」的类才适合当训练数据（能独立跑）。")
+    print("       把 jsonl 里 self_contained=true 且 external_deps=[] 的筛出来做训练。")
+    print("转两段式样本：python build_class_sft.py --input classes.jsonl --out-dir xxx --no-verify")
 
 
 if __name__ == "__main__":
