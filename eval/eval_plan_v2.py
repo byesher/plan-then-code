@@ -84,7 +84,7 @@ def generate_batch(tok, model, msg_batches, max_new, temperature):
     bad_words = _fim_bad_words(tok)
     device = next(model.parameters()).device
     results = []
-    B = 8
+    B = 4
     for i in range(0, len(msg_batches), B):
         batch = msg_batches[i:i + B]
         texts = [tok.apply_chat_template(m, tokenize=False, add_generation_prompt=True) for m in batch]
@@ -107,7 +107,7 @@ def generate_completion(tok, model, prompts, max_new, temperature):
     bad_words = _fim_bad_words(tok)
     device = next(model.parameters()).device
     results = []
-    B = 8
+    B = 4
     for i in range(0, len(prompts), B):
         batch = prompts[i:i + B]
         enc = tok(batch, return_tensors="pt", padding=True, truncation=True, max_length=2048).to(device)
