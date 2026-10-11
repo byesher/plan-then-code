@@ -47,7 +47,7 @@
 
 **Response（assistant）**——首行是 I/O 契约，再分 3~8 步写算法，最后跟代码：
 
-```
+~~~
 【输入怎么读 + 输出什么格式】读入 T 个测试用例；每组读 N、X 和 N 个 A_i；每组输出一行 YES 或 NO。
 思路：判断是否存在某个 A_i ≥ X。
 
@@ -61,7 +61,7 @@
 import sys
 ...
 ```
-```
+~~~
 
 **评测样本（eval.jsonl）**——只含题目和测试用例，三种评测路线共用同一份：
 
@@ -144,7 +144,7 @@ python eval/evaluate.py
 requirements.txt   # 依赖
 data/              # 数据构造（build_data.py）
 train/             # LoRA SFT（finetune.py）
-eval/              # 评测（evaluate.py）
+eval/              # 评测（evaluate.py + run_eval.sh）
 ```
 
 ## 许可证

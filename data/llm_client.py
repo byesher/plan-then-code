@@ -1,26 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-全局 LLM 调用模块（所有需要调大模型的脚本共用）
+统一的大模型调用封装（OpenAI 兼容接口），供各脚本共用。
 
-【为什么单独抽出来】
-之前每个脚本各写一份 API 配置 + call_llm，切模型（Qwen-Max → DeepSeek → ...）要逐个改代码。
-现在统一走这个模块：改环境变量即可，脚本代码不动。
+切换模型只需修改环境变量，无需改动调用代码。
 
-【环境变量（OpenAI 兼容，任何模型都能切）】
-  LLM_API_KEY          必填。API Key
-  LLM_API_BASE         默认 https://dashscope.aliyuncs.com/compatible-mode/v1
-  LLM_MODEL            默认 qwen-max
-  LLM_ENABLE_THINKING  "true" / "false" / 空字符串
-                       空 = 不发送 enable_thinking 字段（DeepSeek/GPT 等非 DashScope 模型用空）
+环境变量：
+  LLM_API_KEY          必填，API Key。
+  LLM_API_BASE         接口地址，默认 https://dashscope.aliyuncs.com/compatible-mode/v1。
+  LLM_MODEL            模型名，默认 qwen-max。
+  LLM_ENABLE_THINKING  "true" / "false" / 空字符串；空表示不发送该字段（非 DashScope 模型用空）。
 
-【切 DeepSeek 示例】
-  export LLM_API_KEY=sk-你的key
-  export LLM_API_BASE=https://api.deepseek.com/v1
-  export LLM_MODEL=deepseek-chat
-  export LLM_ENABLE_THINKING=
-
-【用法】
-  from llm_api import call_llm
+用法：
+  from llm_client import call_llm
   text = call_llm([{"role": "user", "content": "..."}])
 """
 import os

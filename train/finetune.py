@@ -119,7 +119,7 @@ def main():
     trainer.train()
     trainer.save_model(OUT_DIR)
     tokenizer.save_pretrained(OUT_DIR)
-    print(f"\n✅ 训练完成，adapter 已存到：{OUT_DIR}")
+    print(f"\n训练完成，adapter 已保存到：{OUT_DIR}")
 
 
 if __name__ == "__main__":

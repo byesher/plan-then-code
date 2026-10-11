@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""单轮 plan-then-code 数据构造（全量 EASY 版）：
-EASY 题 + 伪代码含输入输出契约 + 并行过滤 + 边造边存 + 按总数比例拆分 train/eval
+"""构造 plan-then-code 训练数据：从 TACO 中筛选指定难度的题目，用大模型生成
+「I/O 契约 + 伪代码 + 代码」，只保留编译通过且通过原题测试用例的样本（闭环校验），
+并按比例切分训练集 / 评测集。
 
-【本次改动（冲 SOTA）】
-1. 不限量：抽出所有符合规则的 EASY 题，训练集全部参与闭环构造（去掉 plan_n 截断）。
-2. 调 LLM 之前先拿总数：ref_passes 之后 len(cand) 即「可用 EASY 总数」（此步只跑参考解
-   subprocess，零 LLM 成本）。总数确定后按比例划分 train/eval，再开始烧钱。
-3. 划分方式：eval = round(总数 × EVAL_RATIO)；N_EVAL>0 时用该值手动覆盖；train = 总数 − eval。
+流程：
+1. 静态过滤（难度 / 交互题 / 空解 / Python2 / 无测试用例）并校验参考解。
+2. 调用大模型前确定可用题目总数，按 EVAL_RATIO（或 N_EVAL）切分 train / eval。
+3. 并发调用大模型生成样本，闭环校验后逐条落盘。
 """
 import argparse
 import ast
@@ -204,14 +204,14 @@ def main():
     out_manifest = os.path.join(out_dir, "manifest.json")
     eval_out = os.path.join(out_dir, "eval.jsonl")
 
-    print(f"加载 TACO（只抽难度={DIFFICULTY}）...")
+    print(f"加载 TACO（难度 = {DIFFICULTY}）...")
     files = sorted(glob.glob(os.path.join(TACO_DIR, "train", "*.arrow")))
     if not files:
         raise FileNotFoundError(f"没找到 TACO：{TACO_DIR}/train/*.arrow")
     ds = concatenate_datasets([Dataset.from_file(f) for f in files])
     print(f"  共 {len(ds)} 条")
 
-    # ── 第一步：快速过滤（纯内存，无 subprocess，秒级）──
+    # ── 第一步：静态过滤（纯内存，不执行参考解）──
     fast = []
     skip = {"interactive": 0, "empty": 0, "py2": 0, "no_tests": 0, "ref_fail": 0, "not_easy": 0}
     for item in ds:
@@ -235,9 +235,9 @@ def main():
             continue
         fast.append((item, tests))
 
-    print(f"  快速过滤后 {len(fast)} 条，并行做参考解自检（{CONCURRENCY} 并发）...")
+    print(f"  静态过滤后 {len(fast)} 条，并行校验参考解（{CONCURRENCY} 并发）...")
 
-    # ── 第二步：并行参考解自检（ref_passes，全量候选，零 LLM）──
+    # ── 第二步：并行校验参考解，确定候选集 ──
     def check_ref(x):
         item, tests = x
         sols = _as_list(item.get("solutions"))
@@ -254,14 +254,14 @@ def main():
     rng = random.Random(SEED)
     rng.shuffle(cand)
 
-    # ── ★ 调 LLM 之前：总数已定，按数量划分 train/eval ──
+    # ── 第三步：切分训练集 / 评测集（在调用大模型之前）──
     n_total = len(cand)
     if N_EVAL > 0:
         n_eval = min(N_EVAL, n_total)
     else:
         n_eval = max(1, int(round(n_total * EVAL_RATIO)))
-    print(f"  ★ 可用 EASY 题总数（调 LLM 之前已确定）：{n_total} 道")
-    print(f"  ★ 评测集 {n_eval} 道（{n_eval / n_total:.1%}），训练集 {n_total - n_eval} 道（{(n_total - n_eval) / n_total:.1%}）")
+    print(f"  可用题目总数（调用大模型前确定）：{n_total} 道")
+    print(f"  评测集 {n_eval} 道（{n_eval / n_total:.1%}），训练集 {n_total - n_eval} 道（{(n_total - n_eval) / n_total:.1%}）")
 
     eval_items = cand[-n_eval:] if n_eval > 0 else []
     train_items = cand[:-n_eval] if n_eval > 0 else cand
@@ -276,9 +276,9 @@ def main():
                 }, ensure_ascii=False) + "\n")
         print(f"  已预留 {len(eval_items)} 道评测题 -> {eval_out}")
 
-    print(f"  训练候选 {len(train_items)} 条，开始闭环构造（不限量，全部处理）...")
+    print(f"  训练候选 {len(train_items)} 条，开始闭环构造 ...")
 
-    # ── 第三步：闭环构造 + 边造边存（每出一条立即 flush，崩了不丢）──
+    # ── 第四步：闭环构造并逐条落盘（flush 防止中断丢失）──
     n_kept = 0
     n_rejected = 0
     n_done = 0
@@ -338,7 +338,7 @@ def main():
     with open(out_manifest, "w", encoding="utf-8") as fm:
         json.dump(manifest, fm, ensure_ascii=False, indent=2)
 
-    print(f"\n✅ 保留 {n_kept} 条训练样本（处理 {n_done}/{len(train_items)}，拒绝 {n_rejected}）")
+    print(f"\n保留 {n_kept} 条训练样本（处理 {n_done}/{len(train_items)}，拒绝 {n_rejected}）")
     print(f"   评测集 {len(eval_items)} 道：{eval_out}")
     print(f"   训练样本：{out_sft}")
     print(f"   统计：{out_manifest}")

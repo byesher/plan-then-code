@@ -1,15 +1,15 @@
 #!/bin/bash
-# 全量评测 FINAL：baseline_fence + baseline_comment + baseline1turn + sft1turn，跑完关机
+# 全量评测：baseline_comment + baseline1turn + sft1turn，评测完成后自动关机（AutoDL 用）。
 set -e
-cd ~/autodl-tmp/plan-then-code/eval
+cd "$(dirname "$0")"
 
-LOG=~/autodl-tmp/full_eval_final.log
+LOG=~/autodl-tmp/full_eval.log
 
 export MODEL_PATH=~/autodl-tmp/Qwen2.5-Coder-14B
 export DEV_PATH=~/autodl-tmp/plan-then-code/data/dataset/eval.jsonl
 export ADAPTER_PATH=~/autodl-tmp/checkpoints/lora
-export OUT_ROOT=~/autodl-tmp/plan-then-code/eval/results/sota_full
-# LIMIT 不设 = 全量 324 题
+export OUT_ROOT=~/autodl-tmp/plan-then-code/eval/results/full
+# LIMIT 不设置时评测全量 324 题
 unset LIMIT
 
 echo "[$(date '+%F %T')] 全量评测开始" | tee "$LOG"

@@ -8,8 +8,8 @@
 
 已退役、保留备查（不在默认评测里跑）：
   - baseline_fence   : 补全模式 {题目}\n\n```python\n（fence/围栏式，见下方注释）
-  - baseline_import  : 50 题 pilot 证明 import 是陷阱，弃用。
-  - baseline_trimmed : 50 题 pilot 证明 trimmed 几乎没用，弃用。
+  - baseline_import  : 预置 import 语句；pilot 实验表明无帮助，弃用。
+  - baseline_trimmed : 精简题目文本；pilot 实验表明几乎无提升，弃用。
 
 运行：环境变量 MODEL_PATH / DEV_PATH / ADAPTER_PATH / OUT_ROOT / LIMIT。
 """
@@ -41,16 +41,16 @@ OUT_ROOT = Path(os.environ.get("OUT_ROOT", BASE_DIR / "results"))
 RUN_DIR = OUT_ROOT / "run"
 
 
-# ── baseline prompt 构造函数（两种补全方式）────────────────────
+# ── 补全式 prompt 构造函数 ──
 def q_as_comment(q):
     return "\n".join(("# " + ln).rstrip() if ln.strip() else "#" for ln in q.splitlines())
 
 
-# ── 已退役的补全式 baseline（预埋方案，保留备查，默认不跑）──────────
-# 50 题 pilot 阶段还试过其他输入形式，最终主 baseline 定为「注释补全」。
+# ── 已退役的补全式 baseline（保留备查，默认不参与评测）──────────
+# pilot 阶段尝试过其他输入形式，最终主 baseline 定为「注释补全」。
 # def prompt_fence(q):
 #     return f"{q}\n\n```python\n"
-# 如需复跑 fence/```python 补全：
+# 如需重新运行 fence/```python 补全：
 #   1) 取消上面 prompt_fence 的注释；
 #   2) 在 BASELINE_MODES 里加回 ("baseline_fence", prompt_fence)。
 
@@ -122,7 +122,7 @@ def generate_batch(tok, model, msg_batches, max_new, temperature):
 
 
 def generate_completion(tok, model, prompts, max_new, temperature):
-    """补全式生成（不走 chat 模板），四种 baseline 共用"""
+    """补全式生成（不走 chat 模板），供补全式 baseline 使用"""
     bad_words = _fim_bad_words(tok)
     device = next(model.parameters()).device
     results = []
@@ -151,7 +151,7 @@ def extract_code_completion(gen):
     m = re.search(r"```\w*\s*\n(.*?)```", code, re.DOTALL)
     if m:
         return m.group(1).strip()
-    # 修复：模型会输出「代码 + ``` + 解释」，从第一个 ``` 处截断，去掉围栏和后面的解释
+    # 模型可能输出「代码 + 围栏 + 解释」，从第一个围栏处截断，仅保留代码。
     idx = code.find("```")
     if idx != -1:
         code = code[:idx]
@@ -223,7 +223,7 @@ def run_tests(code, tests):
 
 
 def eval_completion(tok, model, items, mode, prompt_fn):
-    """四种 baseline 通用（补全式，逐题落盘 raw + code）"""
+    """补全式评测：逐题落盘原始输出与抽取的代码"""
     mode_dir = RUN_DIR / mode
     mode_dir.mkdir(parents=True, exist_ok=True)
     prompts = [prompt_fn(it["question"]) for it in items]
@@ -247,7 +247,7 @@ def eval_completion(tok, model, items, mode, prompt_fn):
 
 
 def eval_one_pass(tok, model, items, mode, prompt_tpl, save_plan=False):
-    """chat 模板单轮（sft1turn），与 v2 一致"""
+    """chat 模板单轮评测（baseline1turn / sft1turn 共用）"""
     mode_dir = RUN_DIR / mode
     mode_dir.mkdir(parents=True, exist_ok=True)
     all_msgs = [[{"role": "user", "content": prompt_tpl.format(question=it["question"])}] for it in items]
@@ -293,14 +293,14 @@ def main():
     all_results = {}
 
     for mode, fn in BASELINE_MODES:
-        print(f"跑 {mode} ...")
+        print(f"评测 {mode} ...")
         r = eval_completion(tok, model, items, mode, fn)
         summaries[mode] = summarize(r)
         all_results[mode] = r
         print(f"  {mode}: pass@1={summaries[mode]['pass@1']:.1%} "
               f"compile={summaries[mode]['compile_rate']:.1%} case_pass={summaries[mode]['case_pass_rate']:.1%}\n")
 
-    print("跑 baseline1turn（裸模型 + chat 强制规划）...")
+    print("评测 baseline1turn（裸模型 + chat 强制规划）...")
     r = eval_one_pass(tok, model, items, "baseline1turn", SFT_PROMPT, save_plan=True)
     summaries["baseline1turn"] = summarize(r)
     all_results["baseline1turn"] = r
@@ -308,7 +308,7 @@ def main():
           f"compile={summaries['baseline1turn']['compile_rate']:.1%} case_pass={summaries['baseline1turn']['case_pass_rate']:.1%}\n")
 
     if ADAPTER_PATH:
-        print("跑 sft1turn（SFT 模型 + chat）...")
+        print("评测 sft1turn（SFT 模型 + chat）...")
         del model
         torch.cuda.empty_cache()
         _, model2 = load_model(ADAPTER_PATH)
@@ -318,7 +318,7 @@ def main():
         print(f"  sft1turn: pass@1={summaries['sft1turn']['pass@1']:.1%} "
               f"compile={summaries['sft1turn']['compile_rate']:.1%} case_pass={summaries['sft1turn']['case_pass_rate']:.1%}\n")
     else:
-        print("⚠️ 没设 ADAPTER_PATH，跳过 sft1turn。")
+        print("未设置 ADAPTER_PATH，跳过 sft1turn。")
 
     print("=" * 80)
     for k, v in summaries.items():
