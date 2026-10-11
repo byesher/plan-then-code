@@ -1,0 +1,9 @@
+# torch 的 +cu121 是 CUDA 12.1 版本；若直接 pip 装不上，先执行：
+#   pip install torch==2.3.0+cu121 --index-url https://download.pytorch.org/whl/cu121
+torch==2.3.0+cu121
+transformers==4.44.2
+peft==0.21.2
+datasets==2.21.0
+accelerate==1.15.0
+requests==2.34.2
+huggingface-hub==0.25.2

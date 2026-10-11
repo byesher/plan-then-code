@@ -3,17 +3,13 @@ __pycache__/
 *.pyc
 .pytest_cache/
 
-# eval harness scratch
+# 数据产物（build_data.py 生成，可再生，不入仓库）
+data/dataset/
+
+# 评测输出与中间产物（可重新生成，不入仓库）
 eval/.scratch/
-
-# downloaded model weights (large, local only)
-Qwen2.5-*-Instruct/
-
-# generated eval outputs (all re-runnable)
 eval/results/
 
-# downloaded dataset samples (large, local only)
-eval/harness/sampled_datasets/
-
-# TACO 悬崖测试集（70 题 benchmark，本地留档，不同步到公开仓库）
-eval/benchmark/problems_cliff/
+# 模型权重 / LoRA adapter（大文件，本地保留）
+Qwen2.5-*-Instruct/
+checkpoints/
